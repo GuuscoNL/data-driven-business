@@ -1,9 +1,9 @@
 import customtkinter as ctk
+import pickle
+import pandas as pd
 
 WINDOW_HEIGHT = 700
 WINDOW_WIDTH = 500
-
-
 
 class App(ctk.CTk):
     def __init__(self):
@@ -13,11 +13,15 @@ class App(ctk.CTk):
         self.resizable(True, True)
         self.minsize(300, 400)
 
-        self.features = []
+        self.features_input_fields = {}
     
         self.grid_columnconfigure(0, weight = 1)
         self.grid_rowconfigure(0, weight = 10)
         self.grid_rowconfigure(1, weight = 1)
+        
+        # laad het model
+        with open("models/DecisionTreeRegressor.pkl", "rb") as file:
+            self.model = pickle.load(file)
         
         self.top_frame = ctk.CTkFrame(self)
         self.top_frame.grid(row = 0, column = 0, sticky = "nesw")
@@ -28,45 +32,67 @@ class App(ctk.CTk):
         self.bottom_frame.propagate(False)
 
         # top_frame
-        self.add_feature_input(self.top_frame, "test", "str")
-        self.add_feature_input(self.top_frame, "test2", "str")
-        self.add_feature_input(self.top_frame, "test3", "str")
-        self.add_feature_input(self.top_frame, "test4", "str")
-        self.add_feature_input(self.top_frame, "test5", "str")
-        self.add_feature_input(self.top_frame, "test6", "str")
-        self.add_feature_input(self.top_frame, "test7", "str")
-        self.add_feature_input(self.top_frame, "test8", "str")
-        self.add_feature_input(self.top_frame, "test9", "str")
+        self.features = [("test",  "str", ""),
+                        ("Techniek veld", "option", list("ABEGIKMOPRSTX")),
+                        ("AAA",   "int", ""),
+                        ("test4", "str", ""),
+                        ("test5", "str", ""),
+                        ("test6", "str", ""),
+                        ("test7", "str", ""),
+                        ("test8", "str", ""),
+                        ("test9", "str", "")]
+
+        for feature in self.features:
+            self.add_feature_input(self.top_frame, feature)
         
         # bottom_frame
         self.result_frame = ctk.CTkFrame(self.bottom_frame, height=(WINDOW_HEIGHT//2)-50, width=WINDOW_WIDTH, border_color="grey", border_width=2)
         self.result_frame.pack(side="top", fill="x", pady=(30, 30), padx=(30, 30))
         self.result_frame.propagate(False)
         
-        label = ctk.CTkLabel(self.result_frame, text="Duur van storing: .....", font=("Arial", 18))
-        label.pack(side="top", pady=(30, 0))
+        self.result_duration_label = ctk.CTkLabel(self.result_frame, text="Duur van storing: .....", font=("Arial", 18))
+        self.result_duration_label.pack(side="top", pady=(20, 0))
     
-        label = ctk.CTkLabel(self.result_frame, text="Herstel: --:-- ..-..-....", font=("Arial", 18))
-        label.pack(side="bottom", pady=(0, 30))
+        self.result_date_label = ctk.CTkLabel(self.result_frame, text="Herstel: --:-- ..-..-....", font=("Arial", 18))
+        self.result_date_label.pack(side="top", pady=(20, 0))
     
-    def add_feature_input(self, master, feature_name, feature_type):
+        self.predict_button = ctk.CTkButton(self.result_frame, text="Voorspel", command=self.predict, font=("Arial", 18))
+        self.predict_button.pack(side="bottom", pady=(0, 20))
+    
+    def add_feature_input(self, master, feature):
+        feature_name, feature_type = feature[0], feature[1]
+        
         frame = ctk.CTkFrame(master)
         frame.pack(side="top", fill="x", pady=(10, 0))
         
         label = ctk.CTkLabel(frame, text=f"{feature_name}:", font=("Arial", 18))
         label.pack(side="left", fill="x", padx=(WINDOW_WIDTH / 13, 0))
         
-        if feature_type == "str":
+        if feature_type == "str" or feature_type == "int":
             input_field = ctk.CTkEntry(frame, width=200)
+
+        elif feature_type == "option":
+            input_field = ctk.CTkOptionMenu(frame, values=feature[2])
+
         else:
             assert False, f"Unknown feature type: `{feature_type}`"
 
         input_field.pack(side="right", fill="x", padx=(0, WINDOW_WIDTH / 13), pady=(5, 5))
         
-        self.features.append((label, input_field))
+        self.features_input_fields[feature_name] = input_field
+    
+    def predict(self):
+        # open pickled model and predict
+        feature = self.features[1][2]
+        df = {f"techn_veld_{x}": False for x in feature}
         
+        techniek = self.features_input_fields[self.features[1][0]].get()
+        df[f"techn_veld_{techniek}"] = True
         
+        X = pd.DataFrame(df, index=[0])
 
+        predicted = self.model.predict(X)[0]
+        self.result_duration_label.configure(text=f"Duur van storing: {predicted} minuten")
 
 app = App()
 app.mainloop()
