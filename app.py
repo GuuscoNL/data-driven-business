@@ -29,7 +29,7 @@ class App(ctk.CTk):
 
         # top_frame
         features = [("test",  "str", ""),
-                    ("test2", "option", "SBETPKOGXIMAR"),
+                    ("test2", "option", list("SBETPKOGXIMAR")),
                     ("AAA",   "int", ""),
                     ("test4", "str", ""),
                     ("test5", "str", ""),
@@ -68,15 +68,7 @@ class App(ctk.CTk):
             input_field = ctk.CTkEntry(frame, width=200)
 
         elif feature_type == "option":
-            if type(feature[2]) is list:
-                options = feature[2]
-            elif type(feature[2]) is str:
-                # Scheidt de string naar een lijst van chars
-                options = list(feature[2])
-            else:
-                assert False, f"Unknown feature[2] type: `{type(feature[2])}`"
-
-            input_field = ctk.CTkOptionMenu(frame, values=options)
+            input_field = ctk.CTkOptionMenu(frame, values=feature[2])
 
         else:
             assert False, f"Unknown feature type: `{feature_type}`"
@@ -87,9 +79,6 @@ class App(ctk.CTk):
     
     def predict(self):
         print("predicted")
-        
-        
-
 
 app = App()
 app.mainloop()
