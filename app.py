@@ -8,10 +8,14 @@ WINDOW_WIDTH = 500
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
+        
         self.title("ProRail dashboard")
         self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
         self.resizable(True, True)
         self.minsize(300, 400)
+
+        self.config(cursor="watch")
+        self.update()
 
         self.features_input_fields = {}
     
@@ -32,15 +36,8 @@ class App(ctk.CTk):
         self.bottom_frame.propagate(False)
 
         # top_frame
-        self.features = [("test",  "str", ""),
-                        ("Techniek veld", "option", list("ABEGIKMOPRSTX")),
-                        ("AAA",   "int", ""),
-                        ("test4", "str", ""),
-                        ("test5", "str", ""),
-                        ("test6", "str", ""),
-                        ("test7", "str", ""),
-                        ("test8", "str", ""),
-                        ("test9", "str", "")]
+        self.features = [("Techniek veld", "option", list("ABEGIKMOPRSTX")),
+                         ]
 
         for feature in self.features:
             self.add_feature_input(self.top_frame, feature)
@@ -58,6 +55,9 @@ class App(ctk.CTk):
     
         self.predict_button = ctk.CTkButton(self.result_frame, text="Voorspel", command=self.predict, font=("Arial", 18))
         self.predict_button.pack(side="bottom", pady=(0, 20))
+        
+        self.config(cursor="")
+        self.update()
     
     def add_feature_input(self, master, feature):
         feature_name, feature_type = feature[0], feature[1]
@@ -82,11 +82,11 @@ class App(ctk.CTk):
         self.features_input_fields[feature_name] = input_field
     
     def predict(self):
-        # open pickled model and predict
-        feature = self.features[1][2]
+
+        feature = self.features[0][2]
         df = {f"techn_veld_{x}": False for x in feature}
         
-        techniek = self.features_input_fields[self.features[1][0]].get()
+        techniek = self.features_input_fields[self.features[0][0]].get()
         df[f"techn_veld_{techniek}"] = True
         
         X = pd.DataFrame(df, index=[0])
