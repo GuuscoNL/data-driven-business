@@ -92,7 +92,7 @@ class App(ctk.CTk):
         X = pd.DataFrame(df, index=[0])
 
         predicted = self.model.predict(X)[0]
-        self.result_duration_label.configure(text=f"Duur van storing: {predicted} minuten")
+        self.result_duration_label.configure(text=f"Duur van storing: {round(predicted)} minuten")
 
 app = App()
 app.mainloop()
