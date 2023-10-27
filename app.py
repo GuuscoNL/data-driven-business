@@ -36,7 +36,7 @@ class App(ctk.CTk):
         self.bottom_frame.propagate(False)
 
         # top_frame
-        self.features = [("Techniek veld", "option", list("ABEGIKMOPRSTX")),
+        self.features = [("Techniek veld", "option", [*list("BEK"),"Other", *list("PST")]),
                          ]
 
         for feature in self.features:
