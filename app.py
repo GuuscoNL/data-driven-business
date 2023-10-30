@@ -64,6 +64,13 @@ class App(ctk.CTk):
 
 
     def get_features(self) -> list[dict[str, Any]]:
+        """Haalt alle kolommen uit `data/model_df.csv` en maakt daar een lijst van 
+        met dicts van de naam en het type van de feature moet de mogelijke opties. 
+        Dit wordt gebruikt bij het maken van de input velden.
+
+        Returns:
+            list[dict[str, Any]]: de features met naam, type en de opties daarvoor.
+        """
         
         # remove the target column
         model_df_copy = self.model_df_raw.copy().drop(["anm_tot_fh"], axis=1)
@@ -89,6 +96,12 @@ class App(ctk.CTk):
         return features
 
     def add_feature_input(self, master: ctk.CTkFrame, feature: dict[str, Any]) -> None:
+        """Maakt een input veld voor een feature en voegt die toe aan de master frame.
+
+        Args:
+            master (ctk.CTkFrame): De master frame waar het input veld aan wordt toegevoegd.
+            feature (dict[str, Any]): De feature met de naam, type en opties.
+        """
         feature_name, feature_type = feature["name"], feature["type"]
         
         frame = ctk.CTkFrame(master)
@@ -112,6 +125,8 @@ class App(ctk.CTk):
         self.features_input_fields[feature_name] = input_field
     
     def predict(self) -> None:
+        """Voorspelt de duur van de storing op basis van de ingevulde waardes in de input velden.
+        """
         X = {}
         
         for feature in self.features:
@@ -132,6 +147,8 @@ class App(ctk.CTk):
         self.result_duration_label.configure(text=f"Duur van storing: {round(predicted)} minuten")
     
     def load_data(self) -> None:
+        """Laad het model en de data die is gebruikt tijdens het fitten van het model.
+        """
         # laad het model
         with open("models/DecisionTreeRegressor.pkl", "rb") as file:
             self.model = pickle.load(file)
