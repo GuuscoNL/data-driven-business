@@ -147,14 +147,14 @@ class App(ctk.CTk):
         self.result_duration_label.configure(text=f"Duur van storing: {round(predicted)} minuten")
     
     def load_data(self) -> None:
-        """Laad het model en de data die is gebruikt tijdens het fitten van het model.
+        """Laad het model en de kolommen die zijn gebruikt tijdens het fitten van het model.
         """
         # laad het model
         with open("models/DecisionTreeRegressor.pkl", "rb") as file:
             self.model = pickle.load(file)
         
         # Laad het model dat is gebruikt tijdens het fitten van het model
-        self.model_df_raw = pd.read_csv("data/model_df.csv", engine="pyarrow", index_col=0)
+        self.model_df_raw = pd.read_csv("data/model_df.csv", index_col=0, nrows=0)
 
 app = App()
 app.mainloop()
