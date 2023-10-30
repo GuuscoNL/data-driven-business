@@ -1,6 +1,7 @@
 import customtkinter as ctk
 import pickle
 import pandas as pd
+from typing import Any
 
 WINDOW_HEIGHT = 700
 WINDOW_WIDTH = 500
@@ -62,7 +63,7 @@ class App(ctk.CTk):
         self.update()
 
 
-    def get_features(self):
+    def get_features(self) -> list[dict[str, Any]]:
         
         # remove the target column
         model_df_copy = self.model_df_raw.copy().drop(["anm_tot_fh"], axis=1)
@@ -87,7 +88,7 @@ class App(ctk.CTk):
             
         return features
 
-    def add_feature_input(self, master, feature):
+    def add_feature_input(self, master: ctk.CTkFrame, feature: dict[str, Any]) -> None:
         feature_name, feature_type = feature["name"], feature["type"]
         
         frame = ctk.CTkFrame(master)
@@ -110,7 +111,7 @@ class App(ctk.CTk):
         
         self.features_input_fields[feature_name] = input_field
     
-    def predict(self):
+    def predict(self) -> None:
         X = {}
         
         for feature in self.features:
@@ -130,7 +131,7 @@ class App(ctk.CTk):
         predicted = self.model.predict(X)[0]
         self.result_duration_label.configure(text=f"Duur van storing: {round(predicted)} minuten")
     
-    def load_data(self):
+    def load_data(self) -> None:
         # laad het model
         with open("models/DecisionTreeRegressor.pkl", "rb") as file:
             self.model = pickle.load(file)
