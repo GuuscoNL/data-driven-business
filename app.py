@@ -28,7 +28,8 @@ class App(ctk.CTk):
         with open("models/DecisionTreeRegressor.pkl", "rb") as file:
             self.model = pickle.load(file)
         
-        self.model_df_raw = pd.read_csv("data/model_df.csv", engine="pyarrow")
+         # Laad het model dat is gebruikt tijdens het fitten van het model
+        self.model_df_raw = pd.read_csv("data/model_df.csv", engine="pyarrow", index_col=0)
         
         self.top_frame = ctk.CTkFrame(self)
         self.top_frame.grid(row = 0, column = 0, sticky = "nesw")
@@ -65,7 +66,7 @@ class App(ctk.CTk):
         
         # remove the target column and empty columns
         model_df_copy = self.model_df_raw.copy()
-        model_df_copy = model_df_copy.drop(["", "anm_tot_fh"], axis=1)
+        model_df_copy = model_df_copy.drop(["anm_tot_fh"], axis=1)
         
         features = []
         
@@ -107,9 +108,7 @@ class App(ctk.CTk):
         self.features_input_fields[feature_name] = input_field
     
     def predict(self):
-
-        # Eerste kolom is de id/index? Hebben we nodig voor het model
-        X = pd.DataFrame(self.model_df_raw.iloc[:,0])
+        X = {}
         
         for feature in self.features:
             if feature["type"] == "option":
@@ -120,6 +119,8 @@ class App(ctk.CTk):
                 X[f"{feature['name']}_{value}"] = True
             else:
                 assert False, f"Unknown feature type: `{feature['type']}`"
+
+        X = pd.DataFrame(X, index=[0])
 
         predicted = self.model.predict(X)[0]
         self.result_duration_label.configure(text=f"Duur van storing: {round(predicted)} minuten")
