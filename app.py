@@ -3,9 +3,40 @@ import pickle
 import pandas as pd
 from typing import Any
 import datetime
+import json
 
 WINDOW_HEIGHT = 700
 WINDOW_WIDTH = 500
+
+feature_dictionary = json.load(open("feature_dictionaries.json", "r"))
+
+class ToplevelInfoWindow(ctk.CTkToplevel):
+    def __init__(self, feature, options, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry(f"450x500")
+        self.title(f"Informatie over {feature}")
+        
+        # make sure the window is on top of the main window
+        self.attributes("-topmost", True)
+        
+        #TODO: add scrollbar
+        #TODO: Base it on feature name that are available
+        feature_dict = feature_dictionary.get(feature, None)
+        if feature_dict is None:
+            feature_dict = "Geen informatie beschikbaar"
+        else:
+            feature_dict = "\n".join([f"{key}: {value}" for key, value in feature_dict.items() if key in options])
+
+        # size label to fit text
+        
+        self.label = ctk.CTkLabel(self, text=feature_dict, font=("Arial", 18), justify="left")
+        self.label.pack(padx=20, pady=20)
+
+        
+        # add button to close window
+        self.close_button = ctk.CTkButton(self, text="Sluiten", command=self.destroy)
+        self.close_button.pack(pady=20, side="bottom")
+        
 
 class App(ctk.CTk):
     def __init__(self):
@@ -117,11 +148,17 @@ class App(ctk.CTk):
 
         elif feature_type == "option":
             input_field = ctk.CTkOptionMenu(frame, values=feature["options"])
+            
+            if feature_dictionary.get(feature_name, None) is not None:
+                info_button = ctk.CTkButton(frame, text="i", width=30 ,command=lambda: ToplevelInfoWindow(feature_name, feature["options"]), font=("Arial", 18, "bold"))
+            else:
+                info_button = None
 
         else:
             assert False, f"Unknown feature type: `{feature_type}`"
 
-        input_field.pack(side="right", fill="x", padx=(0, WINDOW_WIDTH / 13), pady=(5, 5))
+        if info_button is not None: info_button.pack(side="right", padx=(5, 5))
+        input_field.pack(side="right", fill="x", pady=(5, 5))
         
         self.features_input_fields[feature_name] = input_field
     
