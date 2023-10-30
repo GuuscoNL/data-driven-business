@@ -2,6 +2,7 @@ import customtkinter as ctk
 import pickle
 import pandas as pd
 from typing import Any
+import datetime
 
 WINDOW_HEIGHT = 700
 WINDOW_WIDTH = 500
@@ -52,7 +53,7 @@ class App(ctk.CTk):
         self.result_duration_label = ctk.CTkLabel(self.result_frame, text="Duur van storing: .....", font=("Arial", 18))
         self.result_duration_label.pack(side="top", pady=(20, 0))
     
-        self.result_date_label = ctk.CTkLabel(self.result_frame, text="Herstel: --:-- ..-..-....", font=("Arial", 18))
+        self.result_date_label = ctk.CTkLabel(self.result_frame, text="Verwachte herstel: --:-- ..-..-....", font=("Arial", 18))
         self.result_date_label.pack(side="top", pady=(20, 0))
     
         self.predict_button = ctk.CTkButton(self.result_frame, text="Voorspel", command=self.predict, font=("Arial", 18))
@@ -145,6 +146,10 @@ class App(ctk.CTk):
 
         predicted = self.model.predict(X)[0]
         self.result_duration_label.configure(text=f"Duur van storing: {round(predicted)} minuten")
+        
+        # Bereken de datum en tijd van het herstel
+        date = datetime.datetime.now() + datetime.timedelta(minutes=predicted)
+        self.result_date_label.configure(text=f"Verwachte herstel: {date.strftime('%H:%M %d-%m-%Y')}")
     
     def load_data(self) -> None:
         """Laad het model en de kolommen die zijn gebruikt tijdens het fitten van het model.
