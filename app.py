@@ -9,13 +9,14 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
         
+        self.config(cursor="watch")
+        self.update()
+
         self.title("ProRail dashboard")
         self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
         self.resizable(True, True)
         self.minsize(300, 400)
 
-        self.config(cursor="watch")
-        self.update()
 
         self.features_input_fields = {}
     
@@ -27,6 +28,8 @@ class App(ctk.CTk):
         with open("models/DecisionTreeRegressor.pkl", "rb") as file:
             self.model = pickle.load(file)
         
+        self.model_df_raw = pd.read_csv("data/model_df.csv", engine="pyarrow")
+        
         self.top_frame = ctk.CTkFrame(self)
         self.top_frame.grid(row = 0, column = 0, sticky = "nesw")
         self.top_frame.propagate(False)
@@ -36,9 +39,8 @@ class App(ctk.CTk):
         self.bottom_frame.propagate(False)
 
         # top_frame
-        self.features = [("Techniek veld", "option", [*list("BEK"),"Other", *list("PST")]),
-                         ]
-
+        self.features = self.get_features()
+        
         for feature in self.features:
             self.add_feature_input(self.top_frame, feature)
         
@@ -59,8 +61,31 @@ class App(ctk.CTk):
         self.config(cursor="")
         self.update()
     
+    def get_features(self):
+        
+        # remove the target column and empty columns
+        model_df_copy = self.model_df_raw.copy()
+        model_df_copy = model_df_copy.drop(["", "anm_tot_fh"], axis=1)
+        
+        features = []
+        
+        while len(model_df_copy.columns) > 1:
+
+            first_colm = model_df_copy.columns[0]
+
+            column_start = "_".join(first_colm.split("_")[:-1])
+            # get all columns that start with column var
+            columns = [x for x in model_df_copy.columns if x.startswith(column_start)]
+            features.append({"name": column_start, 
+                             "type": "option", 
+                             "options": [x.split("_")[-1] for x in columns]})
+            
+            model_df_copy = model_df_copy.drop(columns, axis=1)
+            
+        return features
+
     def add_feature_input(self, master, feature):
-        feature_name, feature_type = feature[0], feature[1]
+        feature_name, feature_type = feature["name"], feature["type"]
         
         frame = ctk.CTkFrame(master)
         frame.pack(side="top", fill="x", pady=(10, 0))
@@ -72,7 +97,7 @@ class App(ctk.CTk):
             input_field = ctk.CTkEntry(frame, width=200)
 
         elif feature_type == "option":
-            input_field = ctk.CTkOptionMenu(frame, values=feature[2])
+            input_field = ctk.CTkOptionMenu(frame, values=feature["options"])
 
         else:
             assert False, f"Unknown feature type: `{feature_type}`"
@@ -83,13 +108,18 @@ class App(ctk.CTk):
     
     def predict(self):
 
-        feature = self.features[0][2]
-        df = {f"techn_veld_{x}": False for x in feature}
+        # Eerste kolom is de id/index? Hebben we nodig voor het model
+        X = pd.DataFrame(self.model_df_raw.iloc[:,0])
         
-        techniek = self.features_input_fields[self.features[0][0]].get()
-        df[f"techn_veld_{techniek}"] = True
-        
-        X = pd.DataFrame(df, index=[0])
+        for feature in self.features:
+            if feature["type"] == "option":
+                for x in feature["options"]:
+                    X[f"{feature['name']}_{x}"] = False
+                
+                value = self.features_input_fields[feature["name"]].get()
+                X[f"{feature['name']}_{value}"] = True
+            else:
+                assert False, f"Unknown feature type: `{feature['type']}`"
 
         predicted = self.model.predict(X)[0]
         self.result_duration_label.configure(text=f"Duur van storing: {round(predicted)} minuten")
