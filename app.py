@@ -2,6 +2,8 @@ import customtkinter as ctk
 import pickle
 import pandas as pd
 from typing import Any
+from functools import partial
+import winsound
 import datetime
 import json
 
@@ -9,6 +11,7 @@ WINDOW_HEIGHT = 700
 WINDOW_WIDTH = 500
 
 feature_dictionary = json.load(open("feature_dictionaries.json", "r"))
+open_top_levels = {}
 
 class ToplevelInfoWindow(ctk.CTkToplevel):
     def __init__(self, feature, options, *args, **kwargs):
@@ -18,9 +21,9 @@ class ToplevelInfoWindow(ctk.CTkToplevel):
         
         # make sure the window is on top of the main window
         self.attributes("-topmost", True)
+        self.feature = feature
         
         #TODO: add scrollbar
-        #TODO: Base it on feature name that are available
         feature_dict = feature_dictionary.get(feature, None)
         if feature_dict is None:
             feature_dict = "Geen informatie beschikbaar"
@@ -34,8 +37,14 @@ class ToplevelInfoWindow(ctk.CTkToplevel):
 
         
         # add button to close window
-        self.close_button = ctk.CTkButton(self, text="Sluiten", command=self.destroy)
+        self.close_button = ctk.CTkButton(self, text="Sluiten", command=self.on_destroy)
         self.close_button.pack(pady=20, side="bottom")
+        # on destroy set the open_top_levels[feature] to None
+        self.protocol("WM_DELETE_WINDOW", self.on_destroy)
+    
+    def on_destroy(self):
+        open_top_levels[self.feature] = None
+        self.destroy()
         
 
 class App(ctk.CTk):
@@ -150,7 +159,7 @@ class App(ctk.CTk):
             input_field = ctk.CTkOptionMenu(frame, values=feature["options"])
             
             if feature_dictionary.get(feature_name, None) is not None:
-                info_button = ctk.CTkButton(frame, text="i", width=30 ,command=lambda: ToplevelInfoWindow(feature_name, feature["options"]), font=("Arial", 18, "bold"))
+                info_button = ctk.CTkButton(frame, text="i", width=30 ,command=partial(self.open_top_level, feature_name, feature["options"]), font=("Arial", 18, "bold"))
             else:
                 info_button = None
 
@@ -161,6 +170,19 @@ class App(ctk.CTk):
         input_field.pack(side="right", fill="x", pady=(5, 5))
         
         self.features_input_fields[feature_name] = input_field
+    
+    def open_top_level(self, feature_name: str, options: list[str]) -> None:
+        """Opent een top level window met informatie over de feature.
+
+        Args:
+            feature_name (str): De naam van de feature waar informatie over wordt gegeven.
+            options (list[str]): De opties van de feature.
+        """
+        if open_top_levels.get(feature_name, None) is None:
+            open_top_levels[feature_name] = ToplevelInfoWindow(feature_name, options)
+        else:
+            print("BEEP")
+            winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS | winsound.SND_ASYNC)
     
     def predict(self) -> None:
         """Voorspelt de duur van de storing op basis van de ingevulde waardes in de input velden.
