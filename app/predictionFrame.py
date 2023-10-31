@@ -16,6 +16,7 @@ class PredictionFrame(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight = 1)
         self.grid_rowconfigure(0, weight = 10)
         self.grid_rowconfigure(1, weight = 1)
+        self.propagate(False)
         
         self.features_input_fields = {}
 
