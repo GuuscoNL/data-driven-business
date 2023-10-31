@@ -1,4 +1,5 @@
 import customtkinter as ctk
+import tkinter as tk
 import pandas as pd
 """
 Visualisaties:
@@ -85,19 +86,34 @@ class VisualizationFrame(ctk.CTkFrame):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # add label to tell that the data is loading
+        self.loading_label = ctk.CTkLabel(self, text="Loading data...", font=("Arial", 30))
+        self.loading_label.pack(side="top", fill="both", expand=True)
+
         self.propagate(False)
-        data = pd.read_csv("./data/sap_storing_data_hu_project.csv", index_col=0, engine="pyarrow", usecols=cols_to_use)
-        print(data.head())
+        
+    def init(self):
+        self.data = pd.read_csv("./data/sap_storing_data_hu_project.csv", index_col=0, engine="pyarrow", usecols=cols_to_use)
+        
+        
+        # Remove .0 from geocode column
+        self.data["stm_geo_mld"] = self.data["stm_geo_mld"].astype(str).replace("\.0", "", regex=True)
+        
+        self.data.dropna(subset=["stm_geo_mld"], inplace=True)
+        
+        # make sure the date columns are datetime
+        self.data['stm_fh_ddt'] = pd.to_datetime(self.data['stm_fh_ddt'], format='%d/%m/%Y %H:%M:%S', errors='coerce')
         
         # Grid
         self.grid_columnconfigure(0, weight = 1)
-        self.grid_rowconfigure(0, weight = 1)
-        self.grid_rowconfigure(1, weight = 2)
+        self.grid_rowconfigure(0, weight = 2)
+        self.grid_rowconfigure(1, weight = 6)
         
+        self.loading_label.destroy()
+
         self.top_frame()
         
         self.bottom_frame()
-        
 
     
     def top_frame(self):
@@ -114,7 +130,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
     def top_geo_code_frame(self, tab):
         self.geo_code_frame = ctk.CTkFrame(tab)
-        self.geo_code_frame.pack(side="top", fill="both", expand=True)
+        self.geo_code_frame.pack(side="top", fill="both")
         self.geo_code_frame.propagate(False)
         
         self.geo_code_frame.grid_columnconfigure(0, weight = 1)
@@ -133,20 +149,26 @@ class VisualizationFrame(ctk.CTkFrame):
         self.left_frame.grid_rowconfigure(4, weight = 1)
         self.left_frame.grid_rowconfigure(5, weight = 1)
         
-        self.geo_code_label = ctk.CTkLabel(self.left_frame, text="Geo code", font=("Arial", 18))
-        self.geo_code_label.grid(row = 0, column = 0, sticky = "nesw")
+        self.geo_code_label = ctk.CTkLabel(self.left_frame, text="Geo code: ", font=("Arial", 18))
+        self.geo_code_label.grid(row = 0, column = 0, sticky = "w")
+
+        # Add button
+        self.geo_code_entry_sv = tk.StringVar(self.left_frame)
+        self.geo_code_entry_sv.trace("w", lambda name, index, mode, sv=self.geo_code_entry_sv: self.on_geo_code_entry_change(sv))
+        self.geo_code_entry = ctk.CTkEntry(self.left_frame, placeholder_text="559", textvariable=self.geo_code_entry_sv)
+        self.geo_code_entry.grid(row = 0, column = 1, sticky = "w")
         
-        self.geo_code_entry = ctk.CTkEntry(self.left_frame)
-        self.geo_code_entry.grid(row = 0, column = 1, sticky = "nesw")
+        self.geo_code_mean_label = ctk.CTkLabel(self.left_frame, text="Gemiddelde storingsduur: ", font=("Arial", 18))
+        self.geo_code_mean_label.grid(row = 1, column = 0, sticky = "w", rowspan = 2)
         
+        self.geo_code_mean_month_label = ctk.CTkLabel(self.left_frame, text="Gemiddelde storingsduur per maand: ", font=("Arial", 18))
+        self.geo_code_mean_month_label.grid(row = 2, column = 0, sticky = "w", rowspan = 2)
         
-     
+        self.geo_code_total_label = ctk.CTkLabel(self.left_frame, text="Totaal aantal storingen: ", font=("Arial", 18))
+        self.geo_code_total_label.grid(row = 3, column = 0, sticky = "w", rowspan = 2)
+        # run functioen when entry is changed
         
-        
-        
-        
-        
-        
+
         
         
         self.right_frame = ctk.CTkFrame(self.geo_code_frame)
@@ -155,7 +177,43 @@ class VisualizationFrame(ctk.CTkFrame):
         # self.geo_code_entry = ctk.CTkEntry(self.geo_code_frame)
         # self.geo_code_entry.grid(row = 0, column = 0, sticky = "nesw")
         
-
+    def on_geo_code_entry_change(self, sv):
+        geo_code = sv.get()
+        all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
+        
+        # Check of de geocode valid is
+        if not geo_code in all_geo_codes:
+            # zorg dat de geocode entry rood wordt
+            if geo_code == "":
+                self.geo_code_entry.configure(text_color="white")
+            else:
+                self.geo_code_entry.configure(text_color="red")
+            
+            # leeg de labels
+            self.geo_code_mean_label.configure(text="Gemiddelde storingsduur: ")
+            self.geo_code_mean_month_label.configure(text="Gemiddelde storingsduur per maand: ")
+            self.geo_code_total_label.configure(text="Totaal aantal storingen: ")
+            return
+        
+        self.geo_code_entry.configure(text_color="white")
+        
+        data_geo_code = self.data[self.data["stm_geo_mld"] == geo_code]
+        
+        #bereken de gemiddelde storingsduur voor de geocode
+        geo_code_mean = data_geo_code["stm_fh_duur"].mean()
+        geo_code_mean = round(geo_code_mean, 2)
+        self.geo_code_mean_label.configure(text=f"Gemiddelde storingsduur: {geo_code_mean}")
+        
+        #TODO: Berekend het verkeerde
+        #bereken de gemiddelde storingsduur per maand voor de geocode
+        geo_code_mean_month = data_geo_code.groupby(data_geo_code["stm_fh_ddt"].dt.month)["stm_fh_duur"].mean().mean()
+        geo_code_mean_month = geo_code_mean_month.round(2)
+        self.geo_code_mean_month_label.configure(text=f"Gemiddelde storingsduur per maand: {geo_code_mean_month}")
+        
+        #bereken het totaal aantal storingen voor de geocode
+        geo_code_total = data_geo_code["stm_fh_duur"].count()
+        self.geo_code_total_label.configure(text=f"Totaal aantal storingen: {geo_code_total}")
+        
         
     
 
