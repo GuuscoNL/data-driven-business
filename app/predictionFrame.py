@@ -164,3 +164,7 @@ class PredictionFrame(ctk.CTkFrame):
         
         # Laad het model dat is gebruikt tijdens het fitten van het model
         self.model_df_raw = pd.read_csv("data/model_df.csv", index_col=0, nrows=0)
+
+if __name__ == "__main__":
+    from app import main
+    main()

@@ -37,3 +37,7 @@ class ToplevelInfoWindow(ctk.CTkToplevel):
     def on_destroy(self):
         open_top_levels[self.feature] = None
         self.destroy()
+
+if __name__ == "__main__":
+    from app import main
+    main()
