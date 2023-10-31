@@ -3,65 +3,16 @@ import pickle
 import pandas as pd
 from typing import Any
 from functools import partial
+from infoWindow import ToplevelInfoWindow, open_top_levels, feature_dictionary
 import winsound
 import datetime
-import json
 
-WINDOW_HEIGHT = 700
-WINDOW_WIDTH = 500
-
-feature_dictionary = json.load(open("feature_dictionaries.json", "r"))
-open_top_levels = {}
-
-class ToplevelInfoWindow(ctk.CTkToplevel):
-    def __init__(self, feature, options, *args, **kwargs):
+class PredictionFrame(ctk.CTkFrame):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.geometry(f"450x500")
-        self.title(f"Informatie over {feature}")
+        # Importeer hier, omdat het anders een circulaire import wordt
+        from app import WINDOW_HEIGHT, WINDOW_WIDTH
         
-        # make sure the window is on top of the main window
-        self.attributes("-topmost", True)
-        self.feature = feature
-        
-        #TODO: add scrollbar
-        feature_dict = feature_dictionary.get(feature, None)
-        if feature_dict is None:
-            feature_dict = "Geen informatie beschikbaar"
-        else:
-            feature_dict = "\n".join([f"{key}: {value}" for key, value in feature_dict.items() if key in options])
-
-        # size label to fit text
-        
-        self.label = ctk.CTkLabel(self, text=feature_dict, font=("Arial", 18), justify="left")
-        self.label.pack(padx=20, pady=20)
-
-        
-        # add button to close window
-        self.close_button = ctk.CTkButton(self, text="Sluiten", command=self.on_destroy)
-        self.close_button.pack(pady=20, side="bottom")
-        # on destroy set the open_top_levels[feature] to None
-        self.protocol("WM_DELETE_WINDOW", self.on_destroy)
-    
-    def on_destroy(self):
-        open_top_levels[self.feature] = None
-        self.destroy()
-        
-
-class App(ctk.CTk):
-    def __init__(self):
-        super().__init__()
-        
-        # Zet de cursor op watch (laad cursor)
-        self.config(cursor="watch")
-        self.update()
-
-        # Maak het window
-        self.title("ProRail dashboard")
-        self.geometry(f"{WINDOW_WIDTH}x{WINDOW_HEIGHT}")
-        self.resizable(True, True)
-        self.minsize(300, 400)
-
-        # Maak de grid
         self.grid_columnconfigure(0, weight = 1)
         self.grid_rowconfigure(0, weight = 10)
         self.grid_rowconfigure(1, weight = 1)
@@ -70,7 +21,7 @@ class App(ctk.CTk):
 
         self.load_data()
         
-        # Main frames
+        # Top frames
         self.top_frame = ctk.CTkFrame(self)
         self.top_frame.grid(row = 0, column = 0, sticky = "nesw")
         self.top_frame.propagate(False)
@@ -99,11 +50,6 @@ class App(ctk.CTk):
         self.predict_button = ctk.CTkButton(self.result_frame, text="Voorspel", command=self.predict, font=("Arial", 18))
         self.predict_button.pack(side="bottom", pady=(0, 20))
         
-        # Zet de cursor op normaal
-        self.config(cursor="")
-        self.update()
-
-
     def get_features(self) -> list[dict[str, Any]]:
         """Haalt alle kolommen uit `data/model_df.csv` en maakt daar een lijst van 
         met dicts van de naam en het type van de feature moet de mogelijke opties. 
@@ -149,7 +95,7 @@ class App(ctk.CTk):
         frame.pack(side="top", fill="x", pady=(10, 0))
         
         label = ctk.CTkLabel(frame, text=f"{feature_name}:", font=("Arial", 18))
-        label.pack(side="left", fill="x", padx=(WINDOW_WIDTH / 13, 0))
+        label.pack(side="left", fill="x", padx=(10, 0))
         
         # Maak een input veld voor de feature gebaseerd op het type
         if feature_type == "str" or feature_type == "int":
@@ -181,7 +127,6 @@ class App(ctk.CTk):
         if open_top_levels.get(feature_name, None) is None:
             open_top_levels[feature_name] = ToplevelInfoWindow(feature_name, options)
         else:
-            print("BEEP")
             winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS | winsound.SND_ASYNC)
     
     def predict(self) -> None:
@@ -214,11 +159,8 @@ class App(ctk.CTk):
         """Laad het model en de kolommen die zijn gebruikt tijdens het fitten van het model.
         """
         # laad het model
-        with open("models/DecisionTreeRegressor.pkl", "rb") as file:
+        with open("./models/DecisionTreeRegressor.pkl", "rb") as file:
             self.model = pickle.load(file)
         
         # Laad het model dat is gebruikt tijdens het fitten van het model
         self.model_df_raw = pd.read_csv("data/model_df.csv", index_col=0, nrows=0)
-
-app = App()
-app.mainloop()
