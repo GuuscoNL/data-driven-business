@@ -17,14 +17,19 @@ class ToplevelInfoWindow(ctk.CTkToplevel):
         
         #TODO: add scrollbar
         feature_dict = feature_dictionary.get(feature, None)
+        feature_dict_str = ""
         if feature_dict is None:
-            feature_dict = "Geen informatie beschikbaar"
+            feature_dict_str = "Geen informatie beschikbaar"
         else:
-            feature_dict = "\n".join([f"{key}: {value}" for key, value in feature_dict.items() if key in options])
+            for option in options:
+                if option not in feature_dict:
+                    feature_dict_str = "!Geen informatie beschikbaar!"
+                else:
+                    feature_dict_str += f"{option}: {feature_dict[option]}\n"
 
         # size label to fit text
         
-        self.label = ctk.CTkLabel(self, text=feature_dict, font=("Arial", 18), justify="left")
+        self.label = ctk.CTkLabel(self, text=feature_dict_str, font=("Arial", 18), justify="left")
         self.label.pack(padx=20, pady=20)
 
         
