@@ -4,7 +4,6 @@ import pandas as pd
 from typing import Any
 from functools import partial
 from infoWindow import ToplevelInfoWindow, open_top_levels, feature_dictionary
-import winsound
 import datetime
 
 class PredictionFrame(ctk.CTkFrame):
@@ -127,8 +126,6 @@ class PredictionFrame(ctk.CTkFrame):
         """
         if open_top_levels.get(feature_name, None) is None:
             open_top_levels[feature_name] = ToplevelInfoWindow(feature_name, options)
-        else:
-            winsound.PlaySound("SystemExclamation", winsound.SND_ALIAS | winsound.SND_ASYNC)
     
     def predict(self) -> None:
         """Voorspelt de duur van de storing op basis van de ingevulde waardes in de input velden.
