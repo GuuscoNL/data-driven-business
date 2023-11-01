@@ -189,15 +189,8 @@ class VisualizationFrame(ctk.CTkFrame):
         data_geo_code["year"] = data_geo_code["stm_fh_ddt"].dt.year
         
         # voor elk jaar bereken de gemiddelde aantal storingen per maand
-        geo_code_mean_per_month = []
-        for year in data_geo_code["year"].unique():
-            data_geo_code_year = data_geo_code[data_geo_code["year"] == year]
-            data_geo_code_year["month"] = data_geo_code_year["stm_fh_ddt"].dt.month
-            geo_code_mean_per_month.append(data_geo_code_year.groupby("month")["stm_fh_duur"].count().mean())
         
-        geo_code_mean_per_month = sum(geo_code_mean_per_month) / len(data_geo_code["year"].unique())
-        
-        geo_code_mean_per_month = geo_code_mean_per_month.round(2)
+        geo_code_mean_per_month = round(data_geo_code.groupby('year')['stm_fh_duur'].count().mean()/12)
         self.geo_code_mean_month_label.configure(text=f"Gemiddelde aantal storingen per maand: {geo_code_mean_per_month}")
         
         #bereken het totaal aantal storingen voor de geocode
@@ -225,28 +218,33 @@ class VisualizationFrame(ctk.CTkFrame):
         self.total_most_cause_label = ctk.CTkLabel(self.top_malfunction_frame, text="Meest voorkomende oorzaak: ", font=("Arial", 18))
         self.total_most_cause_label.pack(side="top", fill="both")
         
-        self.total_mean_label.configure(text=f"Gemiddelde storingsduur: {self.data['stm_fh_duur'].mean()}")
+        self.total_mean_label.configure(text=f"Gemiddelde storingsduur: {round(self.data['stm_fh_duur'].mean())} minuten")
         
         self.data["year"] = self.data["stm_fh_ddt"].dt.year
-        geo_code_mean_per_month = []
-        for year in self.data["year"].unique():
-            data_geo_code_year = self.data[self.data["year"] == year]
-            data_geo_code_year["month"] = data_geo_code_year["stm_fh_ddt"].dt.month
-            geo_code_mean_per_month.append(data_geo_code_year.groupby("month")["stm_fh_duur"].count().mean())
         
-        self.total_mean_month_label.configure(text=f"Gemiddelde aantal storingen per maand: {self.data.groupby(self.data['stm_fh_ddt'].dt.month)['stm_fh_duur'].count().mean()}")
+        self.total_mean_month_label.configure(text=f"Gemiddelde aantal storingen per maand: {round(self.data.groupby('year')['stm_fh_duur'].count().mean()/12)}")
         
         self.total_total_label.configure(text=f"Totaal aantal storingen: {self.total_data}")
         
-        most_common_causes = self.data['stm_oorz_code'].value_counts().index.tolist()[:3]
-        # to stings
+        most_common_causes = self.data['stm_oorz_code'].value_counts().index.tolist()
         most_common_causes = [str(cause) for cause in most_common_causes]
-        most_common_causes_str = ""
-        for i, cause in enumerate(most_common_causes):
-            info = feature_dictionary.get("oorz_code", {}).get(cause.replace(".0", ""), "Geen informatie beschikbaar")
-            most_common_causes_str += (f"{i+1}. {info}\n")
         
-        self.total_most_cause_label.configure(text=f"Top 3 meest voorkomende oorzaak:\n{most_common_causes_str}")
+        causes_to_ignore =["215", "221", "218", "135", "151", "298"]
+        top_causes = []
+        # ignore some causes
+        for cause in most_common_causes:
+            cause = cause.replace(".0", "")
+            if len(top_causes) >= 5:
+                break
+            if cause not in causes_to_ignore:
+                top_causes.append(cause)
+
+        top_causes_str = ""
+        for i, cause in enumerate(top_causes):
+            info = feature_dictionary.get("oorz_code", {}).get(cause, "Geen informatie beschikbaar")
+            top_causes_str += (f"{i+1}. {info}\n")
+        
+        self.total_most_cause_label.configure(text=f"Top 3 meest voorkomende oorzaak:\n{top_causes_str}")
     
 
     def bottom_frame(self):
