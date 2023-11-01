@@ -1,11 +1,9 @@
 import customtkinter as ctk
 import tkinter as tk
 import pandas as pd
-"""
-Visualisaties:
-Welke plekken de meeste storingsduur hebben
-Per geo code de storingsduur, aantal storingen en de gemiddelde storingsduur, aantal storingen per maand
-"""
+import json
+
+feature_dictionary = json.load(open("./feature_dictionaries.json", "r"))
 
 cols_to_use = [
     '#stm_sap_meldnr',
@@ -94,6 +92,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
     def init(self):
         self.data = pd.read_csv("./data/sap_storing_data_hu_project.csv", index_col=0, engine="pyarrow", usecols=cols_to_use)
+        self.total_data = len(self.data)
         
         
         # Remove .0 from geocode column
@@ -209,13 +208,45 @@ class VisualizationFrame(ctk.CTkFrame):
         geo_code_most_cause = data_geo_code["stm_oorz_code"].value_counts().idxmax()
         self.geo_code_most_cause_label.configure(text=f"Meest voorkomende oorzaak: {geo_code_most_cause}")
         
-        
-    
-
     def top_malfunction_frame(self, tab):
         self.top_malfunction_frame = ctk.CTkFrame(tab)
         self.top_malfunction_frame.pack(side="top", fill="both", expand=True)
         self.top_malfunction_frame.propagate(False)
+
+        self.total_mean_label = ctk.CTkLabel(self.top_malfunction_frame, text="Gemiddelde storingsduur: ", font=("Arial", 18))
+        self.total_mean_label.pack(side="top", fill="both")
+        
+        self.total_mean_month_label = ctk.CTkLabel(self.top_malfunction_frame, text="Gemiddelde aantal storingen per maand: ", font=("Arial", 18))
+        self.total_mean_month_label.pack(side="top", fill="both")
+        
+        self.total_total_label = ctk.CTkLabel(self.top_malfunction_frame, text="Totaal aantal storingen: ", font=("Arial", 18))
+        self.total_total_label.pack(side="top", fill="both")
+        
+        self.total_most_cause_label = ctk.CTkLabel(self.top_malfunction_frame, text="Meest voorkomende oorzaak: ", font=("Arial", 18))
+        self.total_most_cause_label.pack(side="top", fill="both")
+        
+        self.total_mean_label.configure(text=f"Gemiddelde storingsduur: {self.data['stm_fh_duur'].mean()}")
+        
+        self.data["year"] = self.data["stm_fh_ddt"].dt.year
+        geo_code_mean_per_month = []
+        for year in self.data["year"].unique():
+            data_geo_code_year = self.data[self.data["year"] == year]
+            data_geo_code_year["month"] = data_geo_code_year["stm_fh_ddt"].dt.month
+            geo_code_mean_per_month.append(data_geo_code_year.groupby("month")["stm_fh_duur"].count().mean())
+        
+        self.total_mean_month_label.configure(text=f"Gemiddelde aantal storingen per maand: {self.data.groupby(self.data['stm_fh_ddt'].dt.month)['stm_fh_duur'].count().mean()}")
+        
+        self.total_total_label.configure(text=f"Totaal aantal storingen: {self.total_data}")
+        
+        most_common_causes = self.data['stm_oorz_code'].value_counts().index.tolist()[:3]
+        # to stings
+        most_common_causes = [str(cause) for cause in most_common_causes]
+        most_common_causes_str = ""
+        for i, cause in enumerate(most_common_causes):
+            info = feature_dictionary.get("oorz_code", {}).get(cause.replace(".0", ""), "Geen informatie beschikbaar")
+            most_common_causes_str += (f"{i+1}. {info}\n")
+        
+        self.total_most_cause_label.configure(text=f"Top 3 meest voorkomende oorzaak:\n{most_common_causes_str}")
     
 
     def bottom_frame(self):
