@@ -99,7 +99,7 @@ class VisualizationFrame(ctk.CTkFrame):
         # Remove .0 from geocode column
         self.data["stm_geo_mld"] = self.data["stm_geo_mld"].astype(str).replace("\.0", "", regex=True)
         
-        self.data.dropna(subset=["stm_geo_mld"], inplace=True)
+        self.data.dropna(subset=["stm_geo_mld", "stm_fh_ddt"], inplace=True)
         
         # make sure the date columns are datetime
         self.data['stm_fh_ddt'] = pd.to_datetime(self.data['stm_fh_ddt'], format='%d/%m/%Y %H:%M:%S', errors='coerce')
@@ -113,7 +113,7 @@ class VisualizationFrame(ctk.CTkFrame):
 
         self.top_frame()
         
-        # self.bottom_frame()
+        self.bottom_frame()
 
     
     def top_frame(self):
@@ -139,15 +139,13 @@ class VisualizationFrame(ctk.CTkFrame):
         self.geo_code_label = ctk.CTkLabel(self.geo_code_sub_frame, text="Geo code: ", font=("Arial", 18))
         self.geo_code_label.pack( side="left")
 
-        # Add button
-        self.geo_code_entry_sv = tk.StringVar(self.geo_code_sub_frame)
-        self.geo_code_entry = ctk.CTkEntry(self.geo_code_sub_frame, placeholder_text="559", textvariable=self.geo_code_entry_sv)
+        self.geo_code_entry = ctk.CTkEntry(self.geo_code_sub_frame, placeholder_text="559")
         self.geo_code_entry.pack(side="left", fill="both")
         
         self.geo_code_mean_label = ctk.CTkLabel(self.geo_code_frame, text="Gemiddelde storingsduur: ", font=("Arial", 18))
         self.geo_code_mean_label.pack(side="top", fill="both")
         
-        self.geo_code_mean_month_label = ctk.CTkLabel(self.geo_code_frame, text="Gemiddelde storingsduur per maand: ", font=("Arial", 18))
+        self.geo_code_mean_month_label = ctk.CTkLabel(self.geo_code_frame, text="Gemiddelde aantal storingen per maand: ", font=("Arial", 18))
         self.geo_code_mean_month_label.pack(side="top", fill="both")
         
         self.geo_code_total_label = ctk.CTkLabel(self.geo_code_frame, text="Totaal aantal storingen: ", font=("Arial", 18))
@@ -158,7 +156,7 @@ class VisualizationFrame(ctk.CTkFrame):
         self.geo_code_button.pack(side="top")
         
     def on_geo_code_button_click(self):
-        geo_code = self.geo_code_entry_sv.get()
+        geo_code = self.geo_code_entry.get()
         all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
         
         # Check of de geocode valid is
@@ -171,7 +169,7 @@ class VisualizationFrame(ctk.CTkFrame):
             
             # leeg de labels
             self.geo_code_mean_label.configure(text="Gemiddelde storingsduur: ")
-            self.geo_code_mean_month_label.configure(text="Gemiddelde storingsduur per maand: ")
+            self.geo_code_mean_month_label.configure(text="Gemiddelde aantal storingen per maand: ")
             self.geo_code_total_label.configure(text="Totaal aantal storingen: ")
             return
         
@@ -184,11 +182,21 @@ class VisualizationFrame(ctk.CTkFrame):
         geo_code_mean = round(geo_code_mean, 2)
         self.geo_code_mean_label.configure(text=f"Gemiddelde storingsduur: {geo_code_mean}")
         
-        #TODO: Berekend het verkeerde
-        #bereken de gemiddelde storingsduur per maand voor de geocode
-        geo_code_mean_month = data_geo_code.groupby(data_geo_code["stm_fh_ddt"].dt.month)["stm_fh_duur"].mean().mean()
-        geo_code_mean_month = geo_code_mean_month.round(2)
-        self.geo_code_mean_month_label.configure(text=f"Gemiddelde storingsduur per maand: {geo_code_mean_month}")
+        #bereken de gemiddelde aantal storingen per maand voor de geocode
+        # verdeel de data in jaren
+        data_geo_code["year"] = data_geo_code["stm_fh_ddt"].dt.year
+        
+        # voor elk jaar bereken de gemiddelde aantal storingen per maand
+        geo_code_mean_per_month = []
+        for year in data_geo_code["year"].unique():
+            data_geo_code_year = data_geo_code[data_geo_code["year"] == year]
+            data_geo_code_year["month"] = data_geo_code_year["stm_fh_ddt"].dt.month
+            geo_code_mean_per_month.append(data_geo_code_year.groupby("month")["stm_fh_duur"].count().mean())
+        
+        geo_code_mean_per_month = sum(geo_code_mean_per_month) / len(data_geo_code["year"].unique())
+        
+        geo_code_mean_per_month = geo_code_mean_per_month.round(2)
+        self.geo_code_mean_month_label.configure(text=f"Gemiddelde aantal storingen per maand: {geo_code_mean_per_month}")
         
         #bereken het totaal aantal storingen voor de geocode
         geo_code_total = data_geo_code["stm_fh_duur"].count()
