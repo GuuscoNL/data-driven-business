@@ -34,7 +34,12 @@ class App(ctk.CTk):
         # Zet de cursor op normaal
         self.config(cursor="")
         self.update()
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
+    def on_closing(self):
+        # Dit is gedaan, omdat er anders invalid command gedoe krijgt...
+        self.withdraw()
+        self.quit()
 
 def main():
     app = App()
