@@ -151,6 +151,9 @@ class VisualizationFrame(ctk.CTkFrame):
         self.geo_code_total_label = ctk.CTkLabel(self.geo_code_frame, text="Totaal aantal storingen: ", font=("Arial", 18))
         self.geo_code_total_label.pack(side="top", fill="both")
         
+        self.geo_code_most_cause_label = ctk.CTkLabel(self.geo_code_frame, text="Meest voorkomende oorzaak: ", font=("Arial", 18))
+        self.geo_code_most_cause_label.pack(side="top", fill="both")
+        
         # add button
         self.geo_code_button = ctk.CTkButton(self.geo_code_frame, text="Bereken", command=self.on_geo_code_button_click)
         self.geo_code_button.pack(side="top")
@@ -201,6 +204,10 @@ class VisualizationFrame(ctk.CTkFrame):
         #bereken het totaal aantal storingen voor de geocode
         geo_code_total = data_geo_code["stm_fh_duur"].count()
         self.geo_code_total_label.configure(text=f"Totaal aantal storingen: {geo_code_total}")
+        
+        # bereken de meest voorkomende oorzaak voor de geocode
+        geo_code_most_cause = data_geo_code["stm_oorz_code"].value_counts().idxmax()
+        self.geo_code_most_cause_label.configure(text=f"Meest voorkomende oorzaak: {geo_code_most_cause}")
         
         
     
