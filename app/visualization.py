@@ -1,6 +1,8 @@
 import customtkinter as ctk
 import tkinter as tk
 import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg 
 import json
 
 feature_dictionary = json.load(open("./feature_dictionaries.json", "r"))
@@ -113,7 +115,6 @@ class VisualizationFrame(ctk.CTkFrame):
         self.top_frame()
         
         self.bottom_frame()
-
     
     def top_frame(self):
         self.top_tab_view = ctk.CTkTabview(self)
@@ -125,7 +126,6 @@ class VisualizationFrame(ctk.CTkFrame):
         
         self.top_geo_code_frame(self.top_tab_view.tab("geo_code"))
         self.top_malfunction_frame(self.top_tab_view.tab("top storingen"))
-        
         
     def top_geo_code_frame(self, tab):
         self.geo_code_frame = ctk.CTkFrame(tab)
@@ -245,21 +245,41 @@ class VisualizationFrame(ctk.CTkFrame):
             top_causes_str += (f"{i+1}. {info}\n")
         
         self.total_most_cause_label.configure(text=f"Top 3 meest voorkomende oorzaak:\n{top_causes_str}")
-    
 
     def bottom_frame(self):
         self.visualization_tab_view = ctk.CTkTabview(self)
         self.visualization_tab_view.grid(row = 1, column = 0, sticky = "nesw")
         self.visualization_tab_view.propagate(False)
         
-        self.visualization_tab_view.add("test")
-        self.visualization_tab_view.add("test2")
+        self.visualization_tab_view.add("plot")
+        self.visualization_tab_view.add("plot2")
         
-        self.visualization_frame = ctk.CTkFrame(self.visualization_tab_view.tab("test"))
+        self.visualization_frame = ctk.CTkFrame(self.visualization_tab_view.tab("plot"))
         self.visualization_frame.pack(side="top", fill="both", expand=True)
         self.visualization_frame.propagate(False)
         
-        self.visualization_frame2 = ctk.CTkFrame(self.visualization_tab_view.tab("test2"))
+        # make a plot that shows the amount of malfunctions per year
+        self.data["year"] = self.data["stm_fh_ddt"].dt.year
+        malfunction_per_year = self.data.groupby("year")["stm_fh_duur"].count()
+        plt.style.use('grayscale')
+        print(plt.style.available)
+        
+        fig = plt.figure(figsize=(10, 5), dpi=150)
+        plot = fig.add_subplot(111)
+        plot.set_title("Aantal storingen per jaar")
+        plot.set_xlabel("Jaar")
+        plot.set_xticks(malfunction_per_year.index)
+        plot.set_ylabel("Aantal storingen")
+        plot.plot(malfunction_per_year.index, malfunction_per_year, marker="o", color="b")
+        plot.grid(True, color="#d3d3d3")
+
+        # show the plot in the frame
+        canvas = FigureCanvasTkAgg(fig, master=self.visualization_frame)
+        # make canvas dar mode
+        canvas.draw()
+        canvas.get_tk_widget().pack()
+        
+        self.visualization_frame2 = ctk.CTkFrame(self.visualization_tab_view.tab("plot2"))
         self.visualization_frame2.pack(side="top", fill="both", expand=True)
         self.visualization_frame2.propagate(False)
 
