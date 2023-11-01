@@ -113,7 +113,7 @@ class VisualizationFrame(ctk.CTkFrame):
 
         self.top_frame()
         
-        self.bottom_frame()
+        # self.bottom_frame()
 
     
     def top_frame(self):
@@ -133,52 +133,32 @@ class VisualizationFrame(ctk.CTkFrame):
         self.geo_code_frame.pack(side="top", fill="both")
         self.geo_code_frame.propagate(False)
         
-        self.geo_code_frame.grid_columnconfigure(0, weight = 1)
-        self.geo_code_frame.grid_columnconfigure(1, weight = 1)
-        self.geo_code_frame.grid_rowconfigure(0, weight = 1)
+        self.geo_code_sub_frame = ctk.CTkFrame(self.geo_code_frame, fg_color="#2b2b2b")
+        self.geo_code_sub_frame.pack(side="top")
         
-        self.left_frame = ctk.CTkFrame(self.geo_code_frame)
-        self.left_frame.grid(row = 0, column = 0, sticky = "nesw")
-        
-        self.left_frame.grid_columnconfigure(0, weight = 1)
-        self.left_frame.grid_columnconfigure(1, weight = 1)
-        self.left_frame.grid_rowconfigure(0, weight = 1)
-        self.left_frame.grid_rowconfigure(1, weight = 1)
-        self.left_frame.grid_rowconfigure(2, weight = 1)
-        self.left_frame.grid_rowconfigure(3, weight = 1)
-        self.left_frame.grid_rowconfigure(4, weight = 1)
-        self.left_frame.grid_rowconfigure(5, weight = 1)
-        
-        self.geo_code_label = ctk.CTkLabel(self.left_frame, text="Geo code: ", font=("Arial", 18))
-        self.geo_code_label.grid(row = 0, column = 0, sticky = "w")
+        self.geo_code_label = ctk.CTkLabel(self.geo_code_sub_frame, text="Geo code: ", font=("Arial", 18))
+        self.geo_code_label.pack( side="left")
 
         # Add button
-        self.geo_code_entry_sv = tk.StringVar(self.left_frame)
-        self.geo_code_entry_sv.trace("w", lambda name, index, mode, sv=self.geo_code_entry_sv: self.on_geo_code_entry_change(sv))
-        self.geo_code_entry = ctk.CTkEntry(self.left_frame, placeholder_text="559", textvariable=self.geo_code_entry_sv)
-        self.geo_code_entry.grid(row = 0, column = 1, sticky = "w")
+        self.geo_code_entry_sv = tk.StringVar(self.geo_code_sub_frame)
+        self.geo_code_entry = ctk.CTkEntry(self.geo_code_sub_frame, placeholder_text="559", textvariable=self.geo_code_entry_sv)
+        self.geo_code_entry.pack(side="left", fill="both")
         
-        self.geo_code_mean_label = ctk.CTkLabel(self.left_frame, text="Gemiddelde storingsduur: ", font=("Arial", 18))
-        self.geo_code_mean_label.grid(row = 1, column = 0, sticky = "w", rowspan = 2)
+        self.geo_code_mean_label = ctk.CTkLabel(self.geo_code_frame, text="Gemiddelde storingsduur: ", font=("Arial", 18))
+        self.geo_code_mean_label.pack(side="top", fill="both")
         
-        self.geo_code_mean_month_label = ctk.CTkLabel(self.left_frame, text="Gemiddelde storingsduur per maand: ", font=("Arial", 18))
-        self.geo_code_mean_month_label.grid(row = 2, column = 0, sticky = "w", rowspan = 2)
+        self.geo_code_mean_month_label = ctk.CTkLabel(self.geo_code_frame, text="Gemiddelde storingsduur per maand: ", font=("Arial", 18))
+        self.geo_code_mean_month_label.pack(side="top", fill="both")
         
-        self.geo_code_total_label = ctk.CTkLabel(self.left_frame, text="Totaal aantal storingen: ", font=("Arial", 18))
-        self.geo_code_total_label.grid(row = 3, column = 0, sticky = "w", rowspan = 2)
-        # run functioen when entry is changed
+        self.geo_code_total_label = ctk.CTkLabel(self.geo_code_frame, text="Totaal aantal storingen: ", font=("Arial", 18))
+        self.geo_code_total_label.pack(side="top", fill="both")
         
-
+        # add button
+        self.geo_code_button = ctk.CTkButton(self.geo_code_frame, text="Bereken", command=self.on_geo_code_button_click)
+        self.geo_code_button.pack(side="top")
         
-        
-        self.right_frame = ctk.CTkFrame(self.geo_code_frame)
-        self.right_frame.grid(row = 0, column = 1, sticky = "nesw")
-        
-        # self.geo_code_entry = ctk.CTkEntry(self.geo_code_frame)
-        # self.geo_code_entry.grid(row = 0, column = 0, sticky = "nesw")
-        
-    def on_geo_code_entry_change(self, sv):
-        geo_code = sv.get()
+    def on_geo_code_button_click(self):
+        geo_code = self.geo_code_entry_sv.get()
         all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
         
         # Check of de geocode valid is
