@@ -7,7 +7,7 @@ from infoWindow import ToplevelInfoWindow, open_top_levels, feature_dictionary
 import datetime
 
 class PredictionFrame(ctk.CTkFrame):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, model, model_df_raw, predict_callback, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Importeer hier, omdat het anders een circulaire import wordt
         from app import WINDOW_HEIGHT, WINDOW_WIDTH
@@ -16,10 +16,11 @@ class PredictionFrame(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight = 10)
         self.grid_rowconfigure(1, weight = 1)
         self.propagate(False)
+        self.model = model
+        self.model_df_raw = model_df_raw
+        self.predict_callback = predict_callback
         
         self.features_input_fields = {}
-
-        self.load_data()
         
         # Top frames
         self.top_frame = ctk.CTkFrame(self)
@@ -152,16 +153,8 @@ class PredictionFrame(ctk.CTkFrame):
         # Bereken de datum en tijd van het herstel
         date = datetime.datetime.now() + datetime.timedelta(minutes=predicted)
         self.result_date_label.configure(text=f"Verwachte herstel: {date.strftime('%H:%M %d-%m-%Y')}")
-    
-    def load_data(self) -> None:
-        """Laad het model en de kolommen die zijn gebruikt tijdens het fitten van het model.
-        """
-        # laad het model
-        with open("./models/DecisionTreeRegressor.pkl", "rb") as file:
-            self.model = pickle.load(file)
         
-        # Laad het model dat is gebruikt tijdens het fitten van het model
-        self.model_df_raw = pd.read_csv("data/model_df.csv", index_col=0, nrows=0)
+        self.predict_callback(X)
 
 if __name__ == "__main__":
     from app import main
