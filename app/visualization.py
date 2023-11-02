@@ -5,7 +5,10 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from infoWindow import ToplevelInfoWindow
 from functools import partial
+import pickle
 import json
+
+from PlotPrediction import plot_prediction
 
 feature_dictionary = json.load(open("./feature_dictionaries.json", "r"))
 
@@ -85,15 +88,17 @@ cols_to_use = [
 ]
 
 class VisualizationFrame(ctk.CTkFrame):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, model, model_df_raw, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # add label to tell that the data is loading
         self.loading_label = ctk.CTkLabel(self, text="Loading data...", font=("Arial", 30))
         self.loading_label.pack(side="top", fill="both", expand=True)
-
         self.propagate(False)
         self.info_window_is_open = False
+        self.model = model
+        self.model_df_raw = model_df_raw
+        self.prediction_canvas = None
         
     def init(self):
         self.data = pd.read_csv("./data/sap_storing_data_hu_project.csv", index_col=0, engine="pyarrow", usecols=cols_to_use)
@@ -254,6 +259,7 @@ class VisualizationFrame(ctk.CTkFrame):
         self.visualization_tab_view.grid(row = 1, column = 0, sticky = "nesw")
         self.visualization_tab_view.propagate(False)
         
+        self.visualization_tab_view.add("Voorspelling")
         self.visualization_tab_view.add("Storingen per jaar")
         self.visualization_tab_view.add("Histogram storingsduur")
         self.visualization_tab_view.add("Vaak voorkomende oorzaken")
@@ -342,6 +348,25 @@ class VisualizationFrame(ctk.CTkFrame):
         self.info_button = ctk.CTkButton(self.visualization_frame3, width=30, text="Oorzaak code dictionary", command=partial(self.open_top_level, most_common_causes_keys))
         self.info_button.pack(side="top")
         
+        self.visualization_frame4 = ctk.CTkFrame(self.visualization_tab_view.tab("Voorspelling"))
+        self.visualization_frame4.pack(side="top", fill="both", expand=True)
+        self.visualization_frame4.propagate(False)
+
+    
+    def update_prediction(self, input):
+        fig4, ax = plt.subplots(figsize=(12, 8))
+        X = self.model_df_raw.drop("anm_tot_fh", axis=1)
+        Y = self.model_df_raw["anm_tot_fh"]
+        plot_prediction(self.model, input, fig4, ax, X, Y)
+        
+        # show the plot in the frame
+        if self.prediction_canvas is not None:
+            self.prediction_canvas.get_tk_widget().destroy()
+        self.prediction_canvas = FigureCanvasTkAgg(fig4, master=self.visualization_frame4)
+        # make canvas dar mode
+        self.prediction_canvas.draw()
+        self.prediction_canvas.get_tk_widget().pack()
+    
     def open_top_level(self, options: list[str]) -> None:
         """Opent een top level window met informatie over de feature.
 
