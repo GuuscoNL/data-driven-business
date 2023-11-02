@@ -92,15 +92,14 @@ class VisualizationFrame(ctk.CTkFrame):
         super().__init__(*args, **kwargs)
 
         # add label to tell that the data is loading
-        self.loading_label = ctk.CTkLabel(self, text="Loading data...", font=("Arial", 30))
+        self.loading_label = ctk.CTkLabel(self, text="Laden data...", font=("Arial", 30))
         self.loading_label.pack(side="top", fill="both", expand=True)
         self.propagate(False)
         self.info_window_is_open = False
         self.model = model
         self.model_df_raw = model_df_raw
         self.prediction_canvas = None
-        
-    def init(self):
+
         self.data = pd.read_csv("./data/sap_storing_data_hu_project.csv", index_col=0, engine="pyarrow", usecols=cols_to_use)
         self.total_data = len(self.data)
         

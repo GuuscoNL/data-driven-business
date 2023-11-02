@@ -26,14 +26,28 @@ class App(ctk.CTk):
         self.grid_columnconfigure(1, weight = 2)
         self.grid_rowconfigure(0, weight = 1)
         
+        # make label to say 
+        self.loading_label_model = ctk.CTkLabel(self, text="Laden model...", font=("Arial", 18))
+        # pack in middle of frame
+        self.loading_label_model.grid(row = 0, column = 0, sticky = "nesw")
+        
+        self.loading_label_data = ctk.CTkLabel(self, text="Laden data...", font=("Arial", 18))
+        # pack in middle of frame
+        self.loading_label_data.grid(row = 0, column = 1, sticky = "nesw")
+        
+        self.update()
+        
+        self.loading_label_model.destroy()
+        
         self.load_data()
         self.prediction_frame = PredictionFrame(self.model, self.model_df_raw, self.predict_callback, self)
         self.prediction_frame.grid(row = 0, column = 0, sticky = "wnse")
-                
+        
+        self.update()
+        self.loading_label_model.destroy()
+        
         self.visualization_frame = VisualizationFrame(self.model, self.model_df_raw, self)
         self.visualization_frame.grid(row = 0, column = 1, sticky = "wnse")
-        self.update()
-        self.visualization_frame.init()
         # Zet de cursor op normaal
         self.config(cursor="")
         self.update()
