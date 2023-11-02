@@ -1,13 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import sklearn
+import pandas as pd
+import matplotlib
 
-def plot_prediction(model, input_data, fig, ax, X, y):
+def plot_prediction(model: sklearn.tree.DecisionTreeRegressor, 
+                    input_data: pd.DataFrame, 
+                    ax: matplotlib.axes._axes.Axes, 
+                    X: pd.DataFrame, 
+                    y: pd.DataFrame):
+    
     mean_prediction = model.predict(input_data)[0]
     pred_leaf_id = model.apply(input_data)[0]
-
-    # samples_in_node = model.tree_.n_node_samples[pred_leaf_id]
-    # if samples_in_node > 0:
-    #     pred_rmse = np.sqrt(model.tree_.impurity[pred_leaf_id] * samples_in_node / (samples_in_node + 1))
     
     leaf_indices = model.apply(X)
     durations = np.array(y[leaf_indices == pred_leaf_id].tolist())
