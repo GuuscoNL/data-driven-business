@@ -291,10 +291,8 @@ class VisualizationFrame(ctk.CTkFrame):
         self.visualization_frame2.pack(side="top", fill="both", expand=True)
         self.visualization_frame2.propagate(False)
         
-        # remove outliers via IQR methode
-        Q1, Q3 = self.data["stm_fh_duur"].quantile([0.25, 0.75])
-        IQR = Q3 - Q1
-        self.data = self.data[~((self.data["stm_fh_duur"] < (Q1 - 1.5 * IQR)) |(self.data["stm_fh_duur"] > (Q3 + 1.5 * IQR)))]
+        # where it is lower than 500 minuten
+        duur = self.data[self.data["stm_fh_duur"] < 500]["stm_fh_duur"]
         
         # plot histogram of malfunction duration
         fig2 = plt.figure(figsize=(10, 4), dpi=100)
@@ -302,7 +300,7 @@ class VisualizationFrame(ctk.CTkFrame):
         plot2.set_title("Histogram van storingsduur")
         plot2.set_xlabel("Storingsduur (minuten)")
         plot2.set_ylabel("Aantal storingen")
-        plot2.hist(self.data["stm_fh_duur"], bins=100, color="b")
+        plot2.hist(duur, bins=100, color="b")
         plot2.grid(True, color="#d3d3d3")
         
         # show the plot in the frame
