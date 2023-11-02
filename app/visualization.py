@@ -5,7 +5,10 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from infoWindow import ToplevelInfoWindow
 from functools import partial
+import pickle
 import json
+
+from PlotPrediction import plot_prediction
 
 feature_dictionary = json.load(open("./feature_dictionaries.json", "r"))
 
@@ -23,11 +26,11 @@ cols_to_use = [
     # 'stm_equipm_omschr_mld',
     # 'stm_km_van_mld',
     # 'stm_km_tot_mld',
-    'stm_prioriteit',
+    # 'stm_prioriteit',
     # 'stm_status_melding_sap',
     # 'stm_aanngeb_ddt',
     # 'stm_oh_pg_gst',
-    'stm_geo_gst',
+    # 'stm_geo_gst',
     # 'stm_geo_gst_uit_functiepl',
     # 'stm_equipm_nr_gst',
     # 'stm_equipm_soort_gst',
@@ -48,16 +51,16 @@ cols_to_use = [
     # 'stm_evb',
     # 'stm_sap_melddatum',
     # 'stm_sap_meldtijd',
-    'stm_contractgeb_mld',
+    # 'stm_contractgeb_mld',
     # 'stm_functiepl_mld',
-    'stm_techn_mld',
+    # 'stm_techn_mld',
     # 'stm_contractgeb_gst',
     # 'stm_functiepl_gst',
-    'stm_techn_gst',
+    # 'stm_techn_gst',
     # 'stm_aanngeb_dd',
     # 'stm_aanngeb_tijd',
-    'stm_aanntpl_dd',
-    'stm_aanntpl_tijd',
+    # 'stm_aanntpl_dd',
+    # 'stm_aanntpl_tijd',
     # 'stm_arbeid',
     # 'stm_progfh_in_datum',
     # 'stm_progfh_in_tijd',
@@ -72,7 +75,7 @@ cols_to_use = [
     # 'stm_afspr_aanvangdd',
     # 'stm_afspr_aanvangtijd',
     'stm_fh_dd',
-    'stm_fh_tijd',
+    # 'stm_fh_tijd',
     'stm_fh_duur',
     # 'stm_reactie_duur',
     # 'stm_sap_storeinddatum',
@@ -85,17 +88,18 @@ cols_to_use = [
 ]
 
 class VisualizationFrame(ctk.CTkFrame):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, model, model_df_raw, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # add label to tell that the data is loading
-        self.loading_label = ctk.CTkLabel(self, text="Loading data...", font=("Arial", 30))
+        self.loading_label = ctk.CTkLabel(self, text="Laden data...", font=("Arial", 30))
         self.loading_label.pack(side="top", fill="both", expand=True)
-
         self.propagate(False)
         self.info_window_is_open = False
-        
-    def init(self):
+        self.model = model
+        self.model_df_raw = model_df_raw
+        self.prediction_canvas = None
+
         self.data = pd.read_csv("./data/sap_storing_data_hu_project.csv", index_col=0, engine="pyarrow", usecols=cols_to_use)
         self.total_data = len(self.data)
         
@@ -254,9 +258,10 @@ class VisualizationFrame(ctk.CTkFrame):
         self.visualization_tab_view.grid(row = 1, column = 0, sticky = "nesw")
         self.visualization_tab_view.propagate(False)
         
+        self.visualization_tab_view.add("Voorspelling")
         self.visualization_tab_view.add("Storingen per jaar")
         self.visualization_tab_view.add("Histogram storingsduur")
-        self.visualization_tab_view.add("Voorkomende oorzaken")
+        self.visualization_tab_view.add("Vaak voorkomende oorzaken")
         
         self.visualization_frame = ctk.CTkFrame(self.visualization_tab_view.tab("Storingen per jaar"))
         self.visualization_frame.pack(side="top", fill="both", expand=True)
@@ -308,7 +313,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
         
         # plot bar chart of most common causes
-        self.visualization_frame3 = ctk.CTkFrame(self.visualization_tab_view.tab("Voorkomende oorzaken"))
+        self.visualization_frame3 = ctk.CTkFrame(self.visualization_tab_view.tab("Vaak voorkomende oorzaken"))
         self.visualization_frame3.pack(side="top", fill="both", expand=True)
         self.visualization_frame3.propagate(False)
         
@@ -323,7 +328,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
         fig3 = plt.figure(figsize=(9, 4), dpi=100)
         plot3 = fig3.add_subplot(111)
-        plot3.set_title("Voorkomende oorzaken")
+        plot3.set_title("Vaak voorkomende oorzaken")
         plot3.set_xlabel("Oorzaak")
         plot3.set_ylabel("Aantal storingen")
         # Geeft warning maar werkt wel
@@ -342,7 +347,26 @@ class VisualizationFrame(ctk.CTkFrame):
         self.info_button = ctk.CTkButton(self.visualization_frame3, width=30, text="Oorzaak code dictionary", command=partial(self.open_top_level, most_common_causes_keys))
         self.info_button.pack(side="top")
         
-    def open_top_level(self, options: list[str]) -> None:
+        self.visualization_frame4 = ctk.CTkFrame(self.visualization_tab_view.tab("Voorspelling"))
+        self.visualization_frame4.pack(side="top", fill="both", expand=True)
+        self.visualization_frame4.propagate(False)
+
+    
+    def update_prediction(self, input):
+        fig4, ax = plt.subplots(figsize=(12, 8))
+        X = self.model_df_raw.drop("anm_tot_fh", axis=1)
+        Y = self.model_df_raw["anm_tot_fh"]
+        plot_prediction(self.model, input, ax, X, Y)
+        
+        # show the plot in the frame
+        if self.prediction_canvas is not None:
+            self.prediction_canvas.get_tk_widget().destroy()
+        self.prediction_canvas = FigureCanvasTkAgg(fig4, master=self.visualization_frame4)
+        # make canvas dar mode
+        self.prediction_canvas.draw()
+        self.prediction_canvas.get_tk_widget().pack()
+    
+    def open_top_level(self, options) -> None:
         """Opent een top level window met informatie over de feature.
 
         Args:

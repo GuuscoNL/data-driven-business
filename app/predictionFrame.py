@@ -7,7 +7,7 @@ from infoWindow import ToplevelInfoWindow, open_top_levels, feature_dictionary
 import datetime
 
 class PredictionFrame(ctk.CTkFrame):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, model, model_df_raw, predict_callback, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Importeer hier, omdat het anders een circulaire import wordt
         from app import WINDOW_HEIGHT, WINDOW_WIDTH
@@ -16,10 +16,11 @@ class PredictionFrame(ctk.CTkFrame):
         self.grid_rowconfigure(0, weight = 10)
         self.grid_rowconfigure(1, weight = 1)
         self.propagate(False)
+        self.model = model
+        self.model_df_raw = model_df_raw
+        self.predict_callback = predict_callback
         
         self.features_input_fields = {}
-
-        self.load_data()
         
         # Top frames
         self.top_frame = ctk.CTkFrame(self)
@@ -50,7 +51,7 @@ class PredictionFrame(ctk.CTkFrame):
         self.predict_button = ctk.CTkButton(self.result_frame, text="Voorspel", command=self.predict, font=("Arial", 18))
         self.predict_button.pack(side="bottom", pady=(0, 20))
         
-    def get_features(self) -> list[dict[str, Any]]:
+    def get_features(self):
         """Haalt alle kolommen uit `data/model_df.csv` en maakt daar een lijst van 
         met dicts van de naam en het type van de feature moet de mogelijke opties. 
         Dit wordt gebruikt bij het maken van de input velden.
@@ -69,20 +70,29 @@ class PredictionFrame(ctk.CTkFrame):
             first_colm = model_df_copy.columns[0]
 
             # Krijg het begin van de naam van de kolom
-            column_start = "_".join(first_colm.split("_")[:-1])
-
-            # Krijg alle kolommen die beginnen met de naam van dat kolom
-            columns = [x for x in model_df_copy.columns if x.startswith(column_start)]
-            features.append({"name": column_start, 
-                             "type": "option", 
-                             "options": [x.split("_")[-1] for x in columns]})
+            column_name_split = first_colm.split("_")
+            column_start = "_".join(column_name_split[:-1])
+            
+            # Als de kolom een legnte heeft van 1, dan is het een kolom zonder dummies
+            if column_name_split[0] == "stm":
+                columns = [first_colm]
+                features.append({"name": column_name_split[1], 
+                                "type": "int", 
+                                "options": ""})
+                
+            else:
+                # Krijg alle kolommen die beginnen met de naam van dat kolom
+                columns = [x for x in model_df_copy.columns if x.startswith(column_start)]
+                features.append({"name": column_start, 
+                                "type": "option", 
+                                "options": [x.split("_")[-1] for x in columns]})
             
             # Verwijder de kolommen die al zijn toegevoegd en ga door naar de volgende kolom
             model_df_copy = model_df_copy.drop(columns, axis=1)
             
         return features
 
-    def add_feature_input(self, master: ctk.CTkFrame, feature: dict[str, Any]) -> None:
+    def add_feature_input(self, master: ctk.CTkFrame, feature) -> None:
         """Maakt een input veld voor een feature en voegt die toe aan de master frame.
 
         Args:
@@ -98,6 +108,7 @@ class PredictionFrame(ctk.CTkFrame):
         label.pack(side="left", fill="x", padx=(10, 0))
         
         # Maak een input veld voor de feature gebaseerd op het type
+        info_button = None
         if feature_type == "str" or feature_type == "int":
             input_field = ctk.CTkEntry(frame, width=200)
 
@@ -106,8 +117,6 @@ class PredictionFrame(ctk.CTkFrame):
             
             if feature_dictionary.get(feature_name, None) is not None:
                 info_button = ctk.CTkButton(frame, text="i", width=30 ,command=partial(self.open_top_level, feature_name, feature["options"]), font=("Arial", 18, "bold"))
-            else:
-                info_button = None
 
         else:
             assert False, f"Unknown feature type: `{feature_type}`"
@@ -117,7 +126,7 @@ class PredictionFrame(ctk.CTkFrame):
         
         self.features_input_fields[feature_name] = input_field
     
-    def open_top_level(self, feature_name: str, options: list[str]) -> None:
+    def open_top_level(self, feature_name: str, options) -> None:
         """Opent een top level window met informatie over de feature.
 
         Args:
@@ -141,6 +150,30 @@ class PredictionFrame(ctk.CTkFrame):
                 # Zet de optie die is gekozen op True
                 value = self.features_input_fields[feature["name"]].get()
                 X[f"{feature['name']}_{value}"] = True
+            elif feature["type"] == "int":
+                feature_name = feature["name"]
+                value = self.features_input_fields[feature_name].get()
+                
+                # check input
+                
+                # check if input is a number
+                if not value.isnumeric():
+                    self.result_duration_label.configure(text=f"Duur van storing:\n{value} is geen getal")
+                    return
+                
+                # check if input is a positive number
+                if int(value) < 0:
+                    self.result_duration_label.configure(text=f"Duur van storing:\n{value} is geen positief getal")
+                    return
+                
+                # hardcode helaas
+                if feature_name == "prioriteit":
+                    if int(value) not in [1,2,3,4,5,9]:
+                        self.result_duration_label.configure(text=f"Duur van storing:\n{value} is geen geldige prioriteit")
+                        return
+                
+                X[f'stm_{feature["name"]}'] = int(value) if value != "" else 0
+                
             else:
                 assert False, f"Unknown feature type: `{feature['type']}`"
 
@@ -152,16 +185,8 @@ class PredictionFrame(ctk.CTkFrame):
         # Bereken de datum en tijd van het herstel
         date = datetime.datetime.now() + datetime.timedelta(minutes=predicted)
         self.result_date_label.configure(text=f"Verwachte herstel: {date.strftime('%H:%M %d-%m-%Y')}")
-    
-    def load_data(self) -> None:
-        """Laad het model en de kolommen die zijn gebruikt tijdens het fitten van het model.
-        """
-        # laad het model
-        with open("./models/DecisionTreeRegressor.pkl", "rb") as file:
-            self.model = pickle.load(file)
         
-        # Laad het model dat is gebruikt tijdens het fitten van het model
-        self.model_df_raw = pd.read_csv("data/model_df.csv", index_col=0, nrows=0)
+        self.predict_callback(X)
 
 if __name__ == "__main__":
     from app import main
