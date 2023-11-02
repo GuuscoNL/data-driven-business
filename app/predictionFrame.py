@@ -76,7 +76,12 @@ class PredictionFrame(ctk.CTkFrame):
             # Als de kolom een legnte heeft van 1, dan is het een kolom zonder dummies
             if column_name_split[0] == "stm":
                 columns = [first_colm]
-                features.append({"name": column_name_split[1], 
+                if first_colm == "stm_prioriteit":
+                    features.append({"name": column_name_split[1], 
+                                    "type": "int", 
+                                    "options": [1,2,4,5,8,9]})
+                else:
+                    features.append({"name": column_name_split[1], 
                                 "type": "int", 
                                 "options": ""})
                 
@@ -111,6 +116,9 @@ class PredictionFrame(ctk.CTkFrame):
         info_button = None
         if feature_type == "str" or feature_type == "int":
             input_field = ctk.CTkEntry(frame, width=200)
+            print(feature_name)
+            if feature_dictionary.get(feature_name, None) is not None:
+                info_button = ctk.CTkButton(frame, text="i", width=30 ,command=partial(self.open_top_level, feature_name, feature["options"]), font=("Arial", 18, "bold"))
 
         elif feature_type == "option":
             input_field = ctk.CTkOptionMenu(frame, values=feature["options"])
@@ -168,7 +176,7 @@ class PredictionFrame(ctk.CTkFrame):
                 
                 # hardcode helaas
                 if feature_name == "prioriteit":
-                    if int(value) not in [1,2,3,4,5,9]:
+                    if int(value) not in options:
                         self.result_duration_label.configure(text=f"Duur van storing:\n{value} is geen geldige prioriteit")
                         return
                 

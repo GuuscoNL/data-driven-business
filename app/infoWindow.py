@@ -16,6 +16,7 @@ class ToplevelInfoWindow(ctk.CTkToplevel):
         self.feature = feature
         
         #TODO: add scrollbar
+        #TODO: WIDTH DYNAMICALLY CHANGE
         feature_dict = feature_dictionary.get(feature, None)
         feature_dict_str = ""
         
