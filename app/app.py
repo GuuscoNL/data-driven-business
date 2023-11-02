@@ -148,12 +148,29 @@ class App(ctk.CTk):
         """Laad het model en de kolommen die zijn gebruikt tijdens het fitten van het model.
         """
         print("loading model...")
-        # laad het model
-        with open("./models/DecisionTreeRegressor.pkl", "rb") as file:
-            self.model = pickle.load(file)
+        # laad het model in a thread
+        
+        def on_model_thread():
+            print("   model loading!")
+            with open("./models/DecisionTreeRegressor.pkl", "rb") as file:
+                self.model = pickle.load(file)
+            print("   model loading done!")
         
         # Laad het model dat is gebruikt tijdens het fitten van het model
-        self.model_df_raw = pd.read_csv("data/model_df.csv", index_col=0)
+        def on_model_df_thread():
+            print("   model_df loading!")
+            self.model_df_raw = pd.read_csv("data/model_df.csv", index_col=0, engine="pyarrow")
+            print("   model_df loading done!")
+            
+        model_thread = threading.Thread(target=on_model_thread)
+        model_df_thread = threading.Thread(target=on_model_df_thread)
+        model_thread.start()
+        model_df_thread.start()
+        
+        model_thread.join()
+        model_df_thread.join()
+        
+        print("model loaded")
         
     def load_data(self) -> None:
         print("loading data...")
