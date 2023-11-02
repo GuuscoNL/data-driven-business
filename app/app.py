@@ -83,6 +83,7 @@ cols_to_use = [
     # 'stm_dstrglp_naar'
 ]
 
+#TODO: Nederlandse comments
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -128,7 +129,7 @@ class App(ctk.CTk):
         model_thread.join()
         data_thread.join()
         
-        print(f"--- {time.time() - start_time} seconds ---")
+        print(f"Total time to load data and model: {(time.time() - start_time):.4f}")
         
         self.prediction_frame = PredictionFrame(self.model, self.model_df_raw, self.predict_callback, self)
         self.prediction_frame.grid(row = 0, column = 0, sticky = "wnse")
@@ -141,6 +142,7 @@ class App(ctk.CTk):
         # Zet de cursor op normaal
         self.config(cursor="")
         self.update()
+
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
         
     
