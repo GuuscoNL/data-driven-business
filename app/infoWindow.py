@@ -18,12 +18,16 @@ class ToplevelInfoWindow(ctk.CTkToplevel):
         #TODO: add scrollbar
         feature_dict = feature_dictionary.get(feature, None)
         feature_dict_str = ""
+        
+        # remove .0 from numbers
+        options = [str(option).replace(".0", "") for option in options]
+        
         if feature_dict is None:
             feature_dict_str = "Geen informatie beschikbaar"
         else:
             for option in options:
                 if option not in feature_dict:
-                    feature_dict_str = "!Geen informatie beschikbaar!"
+                    feature_dict_str = f"{option}: !Geen informatie beschikbaar!\n"
                 else:
                     feature_dict_str += f"{option}: {feature_dict[option]}\n"
 

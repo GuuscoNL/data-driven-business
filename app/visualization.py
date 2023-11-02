@@ -256,7 +256,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
         self.visualization_tab_view.add("Storingen per jaar")
         self.visualization_tab_view.add("Histogram storingsduur")
-        self.visualization_tab_view.add("Voorkomende oorzaken")
+        self.visualization_tab_view.add("Vaak voorkomende oorzaken")
         
         self.visualization_frame = ctk.CTkFrame(self.visualization_tab_view.tab("Storingen per jaar"))
         self.visualization_frame.pack(side="top", fill="both", expand=True)
@@ -308,7 +308,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
         
         # plot bar chart of most common causes
-        self.visualization_frame3 = ctk.CTkFrame(self.visualization_tab_view.tab("Voorkomende oorzaken"))
+        self.visualization_frame3 = ctk.CTkFrame(self.visualization_tab_view.tab("Vaak voorkomende oorzaken"))
         self.visualization_frame3.pack(side="top", fill="both", expand=True)
         self.visualization_frame3.propagate(False)
         
@@ -323,7 +323,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
         fig3 = plt.figure(figsize=(9, 4), dpi=100)
         plot3 = fig3.add_subplot(111)
-        plot3.set_title("Voorkomende oorzaken")
+        plot3.set_title("Vaak voorkomende oorzaken")
         plot3.set_xlabel("Oorzaak")
         plot3.set_ylabel("Aantal storingen")
         # Geeft warning maar werkt wel
