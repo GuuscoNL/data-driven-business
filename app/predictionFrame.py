@@ -70,13 +70,22 @@ class PredictionFrame(ctk.CTkFrame):
             first_colm = model_df_copy.columns[0]
 
             # Krijg het begin van de naam van de kolom
-            column_start = "_".join(first_colm.split("_")[:-1])
-
-            # Krijg alle kolommen die beginnen met de naam van dat kolom
-            columns = [x for x in model_df_copy.columns if x.startswith(column_start)]
-            features.append({"name": column_start, 
-                             "type": "option", 
-                             "options": [x.split("_")[-1] for x in columns]})
+            column_name_split = first_colm.split("_")
+            column_start = "_".join(column_name_split[:-1])
+            
+            # Als de kolom een legnte heeft van 1, dan is het een kolom zonder dummies
+            if column_name_split[0] == "stm":
+                columns = [first_colm]
+                features.append({"name": column_name_split[1], 
+                                "type": "int", 
+                                "options": ""})
+                
+            else:
+                # Krijg alle kolommen die beginnen met de naam van dat kolom
+                columns = [x for x in model_df_copy.columns if x.startswith(column_start)]
+                features.append({"name": column_start, 
+                                "type": "option", 
+                                "options": [x.split("_")[-1] for x in columns]})
             
             # Verwijder de kolommen die al zijn toegevoegd en ga door naar de volgende kolom
             model_df_copy = model_df_copy.drop(columns, axis=1)
@@ -99,6 +108,7 @@ class PredictionFrame(ctk.CTkFrame):
         label.pack(side="left", fill="x", padx=(10, 0))
         
         # Maak een input veld voor de feature gebaseerd op het type
+        info_button = None
         if feature_type == "str" or feature_type == "int":
             input_field = ctk.CTkEntry(frame, width=200)
 
@@ -107,8 +117,6 @@ class PredictionFrame(ctk.CTkFrame):
             
             if feature_dictionary.get(feature_name, None) is not None:
                 info_button = ctk.CTkButton(frame, text="i", width=30 ,command=partial(self.open_top_level, feature_name, feature["options"]), font=("Arial", 18, "bold"))
-            else:
-                info_button = None
 
         else:
             assert False, f"Unknown feature type: `{feature_type}`"
@@ -142,6 +150,30 @@ class PredictionFrame(ctk.CTkFrame):
                 # Zet de optie die is gekozen op True
                 value = self.features_input_fields[feature["name"]].get()
                 X[f"{feature['name']}_{value}"] = True
+            elif feature["type"] == "int":
+                feature_name = feature["name"]
+                value = self.features_input_fields[feature_name].get()
+                
+                # check input
+                
+                # check if input is a number
+                if not value.isnumeric():
+                    self.result_duration_label.configure(text=f"Duur van storing:\n{value} is geen getal")
+                    return
+                
+                # check if input is a positive number
+                if int(value) < 0:
+                    self.result_duration_label.configure(text=f"Duur van storing:\n{value} is geen positief getal")
+                    return
+                
+                # hardcode helaas
+                if feature_name == "prioriteit":
+                    if int(value) not in [1,2,3,4,5,9]:
+                        self.result_duration_label.configure(text=f"Duur van storing:\n{value} is geen geldige prioriteit")
+                        return
+                
+                X[f'stm_{feature["name"]}'] = int(value) if value != "" else 0
+                
             else:
                 assert False, f"Unknown feature type: `{feature['type']}`"
 
