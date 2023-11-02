@@ -2,7 +2,9 @@ import customtkinter as ctk
 import tkinter as tk
 import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg 
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from infoWindow import ToplevelInfoWindow
+from functools import partial
 import json
 
 feature_dictionary = json.load(open("./feature_dictionaries.json", "r"))
@@ -21,11 +23,11 @@ cols_to_use = [
     # 'stm_equipm_omschr_mld',
     # 'stm_km_van_mld',
     # 'stm_km_tot_mld',
-    'stm_prioriteit',
+    # 'stm_prioriteit',
     # 'stm_status_melding_sap',
     # 'stm_aanngeb_ddt',
     # 'stm_oh_pg_gst',
-    'stm_geo_gst',
+    # 'stm_geo_gst',
     # 'stm_geo_gst_uit_functiepl',
     # 'stm_equipm_nr_gst',
     # 'stm_equipm_soort_gst',
@@ -46,16 +48,16 @@ cols_to_use = [
     # 'stm_evb',
     # 'stm_sap_melddatum',
     # 'stm_sap_meldtijd',
-    'stm_contractgeb_mld',
+    # 'stm_contractgeb_mld',
     # 'stm_functiepl_mld',
-    'stm_techn_mld',
+    # 'stm_techn_mld',
     # 'stm_contractgeb_gst',
     # 'stm_functiepl_gst',
-    'stm_techn_gst',
+    # 'stm_techn_gst',
     # 'stm_aanngeb_dd',
     # 'stm_aanngeb_tijd',
-    'stm_aanntpl_dd',
-    'stm_aanntpl_tijd',
+    # 'stm_aanntpl_dd',
+    # 'stm_aanntpl_tijd',
     # 'stm_arbeid',
     # 'stm_progfh_in_datum',
     # 'stm_progfh_in_tijd',
@@ -70,7 +72,7 @@ cols_to_use = [
     # 'stm_afspr_aanvangdd',
     # 'stm_afspr_aanvangtijd',
     'stm_fh_dd',
-    'stm_fh_tijd',
+    # 'stm_fh_tijd',
     'stm_fh_duur',
     # 'stm_reactie_duur',
     # 'stm_sap_storeinddatum',
@@ -91,6 +93,7 @@ class VisualizationFrame(ctk.CTkFrame):
         self.loading_label.pack(side="top", fill="both", expand=True)
 
         self.propagate(False)
+        self.info_window_is_open = False
         
     def init(self):
         self.data = pd.read_csv("./data/sap_storing_data_hu_project.csv", index_col=0, engine="pyarrow", usecols=cols_to_use)
@@ -129,7 +132,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
     def top_geo_code_frame(self, tab):
         self.geo_code_frame = ctk.CTkFrame(tab)
-        self.geo_code_frame.pack(side="top", fill="both")
+        self.geo_code_frame.pack(side="top", fill="both", expand=True)
         self.geo_code_frame.propagate(False)
         
         self.geo_code_sub_frame = ctk.CTkFrame(self.geo_code_frame, fg_color="#2b2b2b")
@@ -251,10 +254,11 @@ class VisualizationFrame(ctk.CTkFrame):
         self.visualization_tab_view.grid(row = 1, column = 0, sticky = "nesw")
         self.visualization_tab_view.propagate(False)
         
-        self.visualization_tab_view.add("plot")
-        self.visualization_tab_view.add("plot2")
+        self.visualization_tab_view.add("Storingen per jaar")
+        self.visualization_tab_view.add("Histogram storingsduur")
+        self.visualization_tab_view.add("Vaak voorkomende oorzaken")
         
-        self.visualization_frame = ctk.CTkFrame(self.visualization_tab_view.tab("plot"))
+        self.visualization_frame = ctk.CTkFrame(self.visualization_tab_view.tab("Storingen per jaar"))
         self.visualization_frame.pack(side="top", fill="both", expand=True)
         self.visualization_frame.propagate(False)
         
@@ -262,9 +266,8 @@ class VisualizationFrame(ctk.CTkFrame):
         self.data["year"] = self.data["stm_fh_ddt"].dt.year
         malfunction_per_year = self.data.groupby("year")["stm_fh_duur"].count()
         plt.style.use('grayscale')
-        print(plt.style.available)
         
-        fig = plt.figure(figsize=(10, 5), dpi=150)
+        fig = plt.figure(figsize=(10, 5), dpi=100)
         plot = fig.add_subplot(111)
         plot.set_title("Aantal storingen per jaar")
         plot.set_xlabel("Jaar")
@@ -279,9 +282,81 @@ class VisualizationFrame(ctk.CTkFrame):
         canvas.draw()
         canvas.get_tk_widget().pack()
         
-        self.visualization_frame2 = ctk.CTkFrame(self.visualization_tab_view.tab("plot2"))
+        self.visualization_frame2 = ctk.CTkFrame(self.visualization_tab_view.tab("Histogram storingsduur"))
         self.visualization_frame2.pack(side="top", fill="both", expand=True)
         self.visualization_frame2.propagate(False)
+        
+        # remove outliers via IQR methode
+        Q1, Q3 = self.data["stm_fh_duur"].quantile([0.25, 0.75])
+        IQR = Q3 - Q1
+        self.data = self.data[~((self.data["stm_fh_duur"] < (Q1 - 1.5 * IQR)) |(self.data["stm_fh_duur"] > (Q3 + 1.5 * IQR)))]
+        
+        # plot histogram of malfunction duration
+        fig2 = plt.figure(figsize=(10, 4), dpi=100)
+        plot2 = fig2.add_subplot(111)
+        plot2.set_title("Histogram van storingsduur")
+        plot2.set_xlabel("Storingsduur (minuten)")
+        plot2.set_ylabel("Aantal storingen")
+        plot2.hist(self.data["stm_fh_duur"], bins=100, color="b")
+        plot2.grid(True, color="#d3d3d3")
+        
+        # show the plot in the frame
+        canvas1 = FigureCanvasTkAgg(fig2, master=self.visualization_frame2)
+        # make canvas dar mode
+        canvas1.draw()
+        canvas1.get_tk_widget().pack()
+        
+        
+        # plot bar chart of most common causes
+        self.visualization_frame3 = ctk.CTkFrame(self.visualization_tab_view.tab("Vaak voorkomende oorzaken"))
+        self.visualization_frame3.pack(side="top", fill="both", expand=True)
+        self.visualization_frame3.propagate(False)
+        
+        # plot how many times each cause occurs
+        most_common_causes = self.data['stm_oorz_code'].value_counts().iloc[:20]
+        most_common_causes = most_common_causes.sort_values(ascending=False)
+        most_common_causes_keys = most_common_causes.index.astype(str).tolist()
+        most_common_causes_values = most_common_causes.values.tolist()
+        
+        most_common_causes_keys = [key.replace(".0", "") for key in most_common_causes_keys]
+        
+        
+        fig3 = plt.figure(figsize=(9, 4), dpi=100)
+        plot3 = fig3.add_subplot(111)
+        plot3.set_title("Vaak voorkomende oorzaken")
+        plot3.set_xlabel("Oorzaak")
+        plot3.set_ylabel("Aantal storingen")
+        # Geeft warning maar werkt wel
+        plot3.set_xticklabels(most_common_causes_keys, rotation=45)
+        # X-axis is the cause, Y-axis is the amount of times it occurs
+        plot3.bar(most_common_causes_keys, most_common_causes_values, color="b")
+        plot3.grid(False)
+        
+        # show the plot in the frame
+        canvas2 = FigureCanvasTkAgg(fig3, master=self.visualization_frame3)
+        # make canvas dar mode
+        canvas2.draw()
+        canvas2.get_tk_widget().pack()
+        
+        # voeg info knop toe
+        self.info_button = ctk.CTkButton(self.visualization_frame3, width=30, text="Oorzaak code dictionary", command=partial(self.open_top_level, most_common_causes_keys))
+        self.info_button.pack(side="top")
+        
+    def open_top_level(self, options: list[str]) -> None:
+        """Opent een top level window met informatie over de feature.
+
+        Args:
+            feature_name (str): De naam van de feature waar informatie over wordt gegeven.
+            options (list[str]): De opties van de feature.
+        """
+        if not self.info_window_is_open:
+            self.info_window = ToplevelInfoWindow("oorz_code", options, self.infoWindow_callback)
+            self.info_window_is_open = not self.info_window_is_open
+
+    def infoWindow_callback(self):
+        # wordt aangeroepen wanneer de info window wordt gesloten
+        self.info_window_is_open = False
+        
 
 
 

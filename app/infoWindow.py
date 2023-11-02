@@ -6,25 +6,36 @@ open_top_levels = {}
 feature_dictionary = json.load(open("./feature_dictionaries.json", "r"))
 
 class ToplevelInfoWindow(ctk.CTkToplevel):
-    def __init__(self, feature, options, *args, **kwargs):
+    def __init__(self, feature, options, callback=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.geometry(f"450x500")
         self.title(f"Informatie over {feature}")
         
         # make sure the window is on top of the main window
         self.attributes("-topmost", True)
+        self.callback = callback
         self.feature = feature
         
         #TODO: add scrollbar
         feature_dict = feature_dictionary.get(feature, None)
+        feature_dict_str = ""
+        
+        # remove .0 from numbers
+        options = [str(option).replace(".0", "") for option in options]
+        
         if feature_dict is None:
-            feature_dict = "Geen informatie beschikbaar"
+            feature_dict_str = "Geen informatie beschikbaar"
         else:
-            feature_dict = "\n".join([f"{key}: {value}" for key, value in feature_dict.items() if key in options])
+            for option in options:
+                if option not in feature_dict:
+                    feature_dict_str = f"{option}: !Geen informatie beschikbaar!\n"
+                else:
+                    feature_dict_str += f"{option}: {feature_dict[option]}\n"
 
+        height = len(feature_dict_str.split("\n"))
+        self.geometry(f"450x{height*21+130}")
         # size label to fit text
         
-        self.label = ctk.CTkLabel(self, text=feature_dict, font=("Arial", 18), justify="left")
+        self.label = ctk.CTkLabel(self, text=feature_dict_str, font=("Arial", 18), justify="left")
         self.label.pack(padx=20, pady=20)
 
         
@@ -36,6 +47,8 @@ class ToplevelInfoWindow(ctk.CTkToplevel):
     
     def on_destroy(self):
         open_top_levels[self.feature] = None
+        if self.callback is not None:
+            self.callback()
         self.destroy()
 
 if __name__ == "__main__":
