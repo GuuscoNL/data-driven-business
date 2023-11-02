@@ -51,7 +51,7 @@ class PredictionFrame(ctk.CTkFrame):
         self.predict_button = ctk.CTkButton(self.result_frame, text="Voorspel", command=self.predict, font=("Arial", 18))
         self.predict_button.pack(side="bottom", pady=(0, 20))
         
-    def get_features(self) -> list[dict[str, Any]]:
+    def get_features(self):
         """Haalt alle kolommen uit `data/model_df.csv` en maakt daar een lijst van 
         met dicts van de naam en het type van de feature moet de mogelijke opties. 
         Dit wordt gebruikt bij het maken van de input velden.
@@ -83,7 +83,7 @@ class PredictionFrame(ctk.CTkFrame):
             
         return features
 
-    def add_feature_input(self, master: ctk.CTkFrame, feature: dict[str, Any]) -> None:
+    def add_feature_input(self, master: ctk.CTkFrame, feature) -> None:
         """Maakt een input veld voor een feature en voegt die toe aan de master frame.
 
         Args:
@@ -118,7 +118,7 @@ class PredictionFrame(ctk.CTkFrame):
         
         self.features_input_fields[feature_name] = input_field
     
-    def open_top_level(self, feature_name: str, options: list[str]) -> None:
+    def open_top_level(self, feature_name: str, options) -> None:
         """Opent een top level window met informatie over de feature.
 
         Args:

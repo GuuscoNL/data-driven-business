@@ -51,7 +51,6 @@ class App(ctk.CTk):
         self.model_df_raw = pd.read_csv("data/model_df.csv", index_col=0)
         
     def predict_callback(self, X):
-        print("Predicting...")
         self.visualization_frame.update_prediction(X)
 
     def on_closing(self):

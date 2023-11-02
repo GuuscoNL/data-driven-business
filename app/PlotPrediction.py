@@ -4,7 +4,7 @@ import sklearn
 import pandas as pd
 import matplotlib
 
-def plot_prediction(model: sklearn.tree.DecisionTreeRegressor, 
+def plot_prediction(model, 
                     input_data: pd.DataFrame, 
                     ax: matplotlib.axes._axes.Axes, 
                     X: pd.DataFrame, 

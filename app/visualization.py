@@ -357,7 +357,7 @@ class VisualizationFrame(ctk.CTkFrame):
         fig4, ax = plt.subplots(figsize=(12, 8))
         X = self.model_df_raw.drop("anm_tot_fh", axis=1)
         Y = self.model_df_raw["anm_tot_fh"]
-        plot_prediction(self.model, input, fig4, ax, X, Y)
+        plot_prediction(self.model, input, ax, X, Y)
         
         # show the plot in the frame
         if self.prediction_canvas is not None:
@@ -367,7 +367,7 @@ class VisualizationFrame(ctk.CTkFrame):
         self.prediction_canvas.draw()
         self.prediction_canvas.get_tk_widget().pack()
     
-    def open_top_level(self, options: list[str]) -> None:
+    def open_top_level(self, options) -> None:
         """Opent een top level window met informatie over de feature.
 
         Args:
