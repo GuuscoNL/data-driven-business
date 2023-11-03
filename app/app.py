@@ -177,6 +177,16 @@ class App(ctk.CTk):
     def load_data(self) -> None:
         print("loading data...")
         self.data = pd.read_csv("./data/sap_storing_data_hu_project.csv", index_col=0, engine="pyarrow", usecols=cols_to_use)
+        
+        # Remove .0 from geocode column
+
+        self.data["stm_geo_mld"] = self.data["stm_geo_mld"].astype(str).replace(".0", "", regex=True)
+        
+        self.data.dropna(subset=["stm_geo_mld", "stm_fh_ddt"], inplace=True)
+        
+        # make sure the date columns are datetime
+        self.data['stm_fh_ddt'] = pd.to_datetime(self.data['stm_fh_ddt'], format='%d/%m/%Y %H:%M:%S', errors='coerce')
+        
         print("data loaded")
         
     def predict_callback(self, X):
