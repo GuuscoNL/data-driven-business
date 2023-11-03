@@ -116,7 +116,7 @@ class PredictionFrame(ctk.CTkFrame):
         info_button = None
         if feature_type == "str" or feature_type == "int":
             input_field = ctk.CTkEntry(frame, width=200)
-            print(feature_name)
+
             if feature_dictionary.get(feature_name, None) is not None:
                 info_button = ctk.CTkButton(frame, text="i", width=30 ,command=partial(self.open_top_level, feature_name, feature["options"]), font=("Arial", 18, "bold"))
 
@@ -150,16 +150,18 @@ class PredictionFrame(ctk.CTkFrame):
         X = {}
         
         for feature in self.features:
-            if feature["type"] == "option":
+            feature_type = feature["type"]
+            feature_name = feature["name"]
+            feature_options = feature["options"]
+            if feature_type == "option":
                 # Zet alle opties op False
-                for x in feature["options"]:
-                    X[f"{feature['name']}_{x}"] = False
+                for x in feature_options:
+                    X[f"{feature_name}_{x}"] = False
                 
                 # Zet de optie die is gekozen op True
-                value = self.features_input_fields[feature["name"]].get()
-                X[f"{feature['name']}_{value}"] = True
-            elif feature["type"] == "int":
-                feature_name = feature["name"]
+                value = self.features_input_fields[feature_name].get()
+                X[f"{feature_name}_{value}"] = True
+            elif feature_type == "int":
                 value = self.features_input_fields[feature_name].get()
                 
                 # check input
@@ -176,11 +178,11 @@ class PredictionFrame(ctk.CTkFrame):
                 
                 # hardcode helaas
                 if feature_name == "prioriteit":
-                    if int(value) not in options:
+                    if int(value) not in feature_options:
                         self.result_duration_label.configure(text=f"Duur van storing:\n{value} is geen geldige prioriteit")
                         return
                 
-                X[f'stm_{feature["name"]}'] = int(value) if value != "" else 0
+                X[f'stm_{feature_name}'] = int(value) if value != "" else 0
                 
             else:
                 assert False, f"Unknown feature type: `{feature['type']}`"
