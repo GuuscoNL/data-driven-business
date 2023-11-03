@@ -134,8 +134,8 @@ class App(ctk.CTk):
         self.prediction_frame = PredictionFrame(self.model, self.model_df_raw, self.predict_callback, self)
         self.prediction_frame.grid(row = 0, column = 0, sticky = "wnse")
         
-        self.update()
-        self.loading_label_model.destroy()
+        # self.update()
+        self.loading_label_data.destroy()
         
         self.visualization_frame = VisualizationFrame(self.model, self.model_df_raw, self.data, self)
         self.visualization_frame.grid(row = 0, column = 1, sticky = "wnse")
@@ -190,15 +190,7 @@ class App(ctk.CTk):
         print("Data cleaned")
         
     def predict_callback(self, X):
-        # Zet de cursor op watch (laad cursor)
-        self.config(cursor="watch")
-        self.update()
-        
         self.visualization_frame.update_prediction(X)
-        
-        # Zet de cursor op normaal
-        self.config(cursor="")
-        self.update()
         
 
     def on_closing(self):

@@ -1,11 +1,8 @@
 import customtkinter as ctk
-import tkinter as tk
-import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from infoWindow import ToplevelInfoWindow
 from functools import partial
-import pickle
 import json
 
 from PlotPrediction import plot_prediction, get_95_interval
@@ -56,10 +53,10 @@ class VisualizationFrame(ctk.CTkFrame):
         self.prediction_frame.propagate(False)
         
         # temp label
-        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: ", font=("Arial", 18))
+        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: Nog geen voorspelling gedaan", font=("Arial", 18))
         self.RMSE_label.pack(side="top", fill="both")
         
-        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="95% van de gevallen zit de functie herstel duur tussen:", font=("Arial", 18))
+        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="95% van de gevallen zit de functie herstel duur tussen:\nNog geen voorspelling gedaan", font=("Arial", 18))
         self.interval_label.pack(side="top", fill="both")
         
         
@@ -136,14 +133,14 @@ class VisualizationFrame(ctk.CTkFrame):
         
         # bereken de meest voorkomende oorzaak voor de geocode
         geo_code_most_cause = data_geo_code["stm_oorz_code"].value_counts().idxmax()
-        self.geo_code_most_cause_label.configure(text=f"Meest voorkomende oorzaak: {geo_code_most_cause}")
+        self.geo_code_most_cause_label.configure(text=f"Meest voorkomende oorzaken: {geo_code_most_cause}")
         
     def top_malfunction_frame(self, tab):
         self.top_malfunction_frame = ctk.CTkFrame(tab)
         self.top_malfunction_frame.pack(side="top", fill="both", expand=True)
         self.top_malfunction_frame.propagate(False)
 
-        self.total_mean_label = ctk.CTkLabel(self.top_malfunction_frame, text="Gemiddelde storingsduur: ", font=("Arial", 18))
+        self.total_mean_label = ctk.CTkLabel(self.top_malfunction_frame, text="Mediaan storingsduur: ", font=("Arial", 18))
         self.total_mean_label.pack(side="top", fill="both")
         
         self.total_mean_month_label = ctk.CTkLabel(self.top_malfunction_frame, text="Gemiddelde aantal storingen per maand: ", font=("Arial", 18))
@@ -155,7 +152,11 @@ class VisualizationFrame(ctk.CTkFrame):
         self.total_most_cause_label = ctk.CTkLabel(self.top_malfunction_frame, text="Meest voorkomende oorzaak: ", font=("Arial", 18))
         self.total_most_cause_label.pack(side="top", fill="both")
         
-        self.total_mean_label.configure(text=f"Gemiddelde storingsduur: {round(self.data['stm_fh_duur'].mean())} minuten")
+        total_mean = self.data["stm_fh_duur"].median()
+        # format H hour M minutes
+        total_mean_str = f"{int(total_mean//60)} uur en {int(total_mean%60)} minuten"
+        
+        self.total_mean_label.configure(text=f"Mediaan storingsduur: {total_mean_str}")
         
         self.data["year"] = self.data["stm_fh_ddt"].dt.year
         
@@ -225,9 +226,9 @@ class VisualizationFrame(ctk.CTkFrame):
         duur = self.data[(self.data["stm_fh_duur"] > 5) & (self.data["stm_fh_duur"] < 480)]["stm_fh_duur"]
         
         # plot histogram of malfunction duration
-        fig2 = plt.figure(figsize=(10, 4), dpi=100)
+        fig2 = plt.figure(figsize=(10, 5), dpi=100)
         plot2 = fig2.add_subplot(111)
-        plot2.set_title("Histogram van storingsduur")
+        plot2.set_title("Histogram van storingsduur (5 tot 480 minuten)")
         plot2.set_xlabel("Storingsduur (minuten)")
         plot2.set_ylabel("Aantal storingen")
         plot2.hist(duur, bins=100, color="b")
@@ -254,7 +255,7 @@ class VisualizationFrame(ctk.CTkFrame):
         most_common_causes_keys = [key.replace(".0", "") for key in most_common_causes_keys]
         
         
-        fig3 = plt.figure(figsize=(9, 4), dpi=100)
+        fig3 = plt.figure(figsize=(10, 5), dpi=100)
         plot3 = fig3.add_subplot(111)
         plot3.set_title("Vaak voorkomende oorzaken")
         plot3.set_xlabel("Oorzaak")
@@ -273,7 +274,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
         # voeg info knop toe
         self.info_button = ctk.CTkButton(self.visualization_frame3, width=30, text="Oorzaak code dictionary", command=partial(self.open_top_level, most_common_causes_keys))
-        self.info_button.pack(side="top")
+        self.info_button.pack(side="top", pady=(10,0))
         
         self.visualization_frame4 = ctk.CTkFrame(self.visualization_tab_view.tab("Voorspelling"))
         self.visualization_frame4.pack(side="top", fill="both", expand=True)
@@ -296,8 +297,11 @@ class VisualizationFrame(ctk.CTkFrame):
         
         prediction_results = get_95_interval(self.model, input, X, Y)
         
-        self.RMSE_label.configure(text=f"Voorspellings RMSE: {prediction_results['rmse']:.2f}")
-        self.interval_label.configure(text=f"95% van de gevallen zit de functie herstel duur tussen:\n{prediction_results['interval'][0]:.2f} minuten en {prediction_results['interval'][1]:.2f} minuten")
+        self.RMSE_label.configure(text=f"RMSE Voorspelling: {prediction_results['rmse']:.2f}")
+        self.interval_label.configure(text=f"In 95% van de gevallen zit de functie herstel duur tussen:\n{prediction_results['interval'][0]:.2f} minuten en {prediction_results['interval'][1]:.2f} minuten")
+        
+        self.top_tab_view.set("Voorspelling")
+        self.visualization_tab_view.set("Voorspelling")
     
     def open_top_level(self, options) -> None:
         """Opent een top level window met informatie over de feature.
