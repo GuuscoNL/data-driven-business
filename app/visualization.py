@@ -82,8 +82,8 @@ class VisualizationFrame(ctk.CTkFrame):
         self.geo_code_entry = ctk.CTkEntry(self.geo_code_sub_frame, placeholder_text="559")
         self.geo_code_entry.pack(side="left", fill="both")
         
-        self.geo_code_mean_label = ctk.CTkLabel(self.geo_code_frame, text="Gemiddelde storingsduur: ", font=("Arial", 18))
-        self.geo_code_mean_label.pack(side="top", fill="both")
+        self.geo_code_median_label = ctk.CTkLabel(self.geo_code_frame, text="Mediaan storingsduur: ", font=("Arial", 18))
+        self.geo_code_median_label.pack(side="top", fill="both")
         
         self.geo_code_mean_month_label = ctk.CTkLabel(self.geo_code_frame, text="Gemiddelde aantal storingen per maand: ", font=("Arial", 18))
         self.geo_code_mean_month_label.pack(side="top", fill="both")
@@ -111,7 +111,7 @@ class VisualizationFrame(ctk.CTkFrame):
                 self.geo_code_entry.configure(text_color="red")
             
             # leeg de labels
-            self.geo_code_mean_label.configure(text="Gemiddelde storingsduur: ")
+            self.geo_code_median_label.configure(text="Mediaan storingsduur: ")
             self.geo_code_mean_month_label.configure(text="Gemiddelde aantal storingen per maand: ")
             self.geo_code_total_label.configure(text="Totaal aantal storingen: ")
             return
@@ -121,9 +121,9 @@ class VisualizationFrame(ctk.CTkFrame):
         data_geo_code = self.data[self.data["stm_geo_mld"] == geo_code]
         
         #bereken de gemiddelde storingsduur voor de geocode
-        geo_code_mean = data_geo_code["stm_fh_duur"].mean()
-        geo_code_mean = round(geo_code_mean, 2)
-        self.geo_code_mean_label.configure(text=f"Gemiddelde storingsduur: {geo_code_mean}")
+        geo_code_median = data_geo_code["stm_fh_duur"].median()
+        geo_code_median = round(geo_code_median, 2)
+        self.geo_code_median_label.configure(text=f"Mediaan storingsduur: {geo_code_median}")
         
         #bereken de gemiddelde aantal storingen per maand voor de geocode
         # verdeel de data in jaren
