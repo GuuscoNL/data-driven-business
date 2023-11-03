@@ -181,7 +181,7 @@ class VisualizationFrame(ctk.CTkFrame):
             info = feature_dictionary.get("oorz_code", {}).get(cause, "Geen informatie beschikbaar")
             top_causes_str += (f"{i+1}. {info}\n")
         
-        self.total_most_cause_label.configure(text=f"Top 3 meest voorkomende oorzaak:\n{top_causes_str}")
+        self.total_most_cause_label.configure(text=f"Top 5 meest voorkomende oorzaak:\n{top_causes_str}")
 
     def bottom_frame(self):
         self.visualization_tab_view = ctk.CTkTabview(self)
