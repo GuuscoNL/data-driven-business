@@ -222,7 +222,7 @@ class VisualizationFrame(ctk.CTkFrame):
         self.visualization_frame2.propagate(False)
         
         # where it is lower than 500 minuten
-        duur = self.data[self.data["stm_fh_duur"] < 500]["stm_fh_duur"]
+        duur = self.data[(self.data["stm_fh_duur"] > 5) & (self.data["stm_fh_duur"] < 480)]["stm_fh_duur"]
         
         # plot histogram of malfunction duration
         fig2 = plt.figure(figsize=(10, 4), dpi=100)
@@ -297,7 +297,7 @@ class VisualizationFrame(ctk.CTkFrame):
         prediction_results = get_95_interval(self.model, input, X, Y)
         
         self.RMSE_label.configure(text=f"Voorspellings RMSE: {prediction_results['rmse']:.2f}")
-        self.interval_label.configure(text=f"95% van de gevallen zit de functie herstel duur tussen:\n{prediction_results['interval'][0]} minuten en {prediction_results['interval'][1]} minuten")
+        self.interval_label.configure(text=f"95% van de gevallen zit de functie herstel duur tussen:\n{prediction_results['interval'][0]:.2f} minuten en {prediction_results['interval'][1]:.2f} minuten")
     
     def open_top_level(self, options) -> None:
         """Opent een top level window met informatie over de feature.
