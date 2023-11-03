@@ -182,11 +182,6 @@ class App(ctk.CTk):
         print("data loaded, cleaning data...")
         self.data["stm_geo_mld"] = self.data["stm_geo_mld"].astype(str).replace(".0", "", regex=True)
         
-        self.data.dropna(subset=["stm_geo_mld", "stm_fh_ddt"], inplace=True)
-        
-        # make sure the date columns are datetime
-        self.data['stm_fh_ddt'] = pd.to_datetime(self.data['stm_fh_ddt'], format='%d/%m/%Y %H:%M:%S', errors='coerce')
-        
         print("Data cleaned")
         
     def predict_callback(self, X):

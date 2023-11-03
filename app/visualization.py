@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from infoWindow import ToplevelInfoWindow
 from functools import partial
+import pandas as pd
 import json
 
 from PlotPrediction import plot_prediction, get_95_interval
@@ -23,7 +24,12 @@ class VisualizationFrame(ctk.CTkFrame):
 
         
         self.total_data = len(self.data)
+        self.all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
         
+        self.data.dropna(subset=["stm_geo_mld", "stm_fh_ddt"], inplace=True)
+        
+        # make sure the date columns are datetime
+        self.data['stm_fh_ddt'] = pd.to_datetime(self.data['stm_fh_ddt'], format='%d/%m/%Y %H:%M:%S', errors='coerce')
         
         # Grid
         self.grid_columnconfigure(0, weight = 1)
@@ -53,10 +59,10 @@ class VisualizationFrame(ctk.CTkFrame):
         self.prediction_frame.propagate(False)
         
         # temp label
-        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: Nog geen voorspelling gedaan", font=("Arial", 18))
+        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: ...", font=("Arial", 18))
         self.RMSE_label.pack(side="top", fill="both")
         
-        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="95% van de gevallen zit de functie herstel duur tussen:\nNog geen voorspelling gedaan", font=("Arial", 18))
+        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="In 95% van de gevallen zit de functie herstel duur tussen:\n...", font=("Arial", 18))
         self.interval_label.pack(side="top", fill="both")
         
         
@@ -93,10 +99,10 @@ class VisualizationFrame(ctk.CTkFrame):
         
     def on_geo_code_button_click(self):
         geo_code = self.geo_code_entry.get()
-        all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
+        self.all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
         
         # Check of de geocode valid is
-        if not geo_code in all_geo_codes:
+        if  geo_code not in self.all_geo_codes:
             # zorg dat de geocode entry rood wordt
             if geo_code == "":
                 self.geo_code_entry.configure(text_color="white")
@@ -133,7 +139,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
         # bereken de meest voorkomende oorzaak voor de geocode
         geo_code_most_cause = data_geo_code["stm_oorz_code"].value_counts().idxmax()
-        self.geo_code_most_cause_label.configure(text=f"Meest voorkomende oorzaken: {geo_code_most_cause}")
+        self.geo_code_most_cause_label.configure(text=f"Meest voorkomende oorzaken: {geo_code_most_cause.replace('.0', '')}")
         
     def top_malfunction_frame(self, tab):
         self.top_malfunction_frame = ctk.CTkFrame(tab)
