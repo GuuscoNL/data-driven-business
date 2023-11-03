@@ -8,7 +8,7 @@ from functools import partial
 import pickle
 import json
 
-from PlotPrediction import plot_prediction
+from PlotPrediction import plot_prediction, get_95_interval
 
 feature_dictionary = json.load(open("./feature_dictionaries.json", "r"))
 
@@ -42,12 +42,28 @@ class VisualizationFrame(ctk.CTkFrame):
         self.top_tab_view.grid(row = 0, column = 0, sticky = "nesw")
         self.top_tab_view.propagate(False)
         
-        self.top_tab_view.add("geo_code")
-        self.top_tab_view.add("top storingen")
+        self.top_tab_view.add("Voorspelling")
+        self.top_tab_view.add("Geo code")
+        self.top_tab_view.add("Top storingen")
         
-        self.top_geo_code_frame(self.top_tab_view.tab("geo_code"))
-        self.top_malfunction_frame(self.top_tab_view.tab("top storingen"))
+        self.prediction_frame(self.top_tab_view.tab("Voorspelling"))
+        self.top_geo_code_frame(self.top_tab_view.tab("Geo code"))
+        self.top_malfunction_frame(self.top_tab_view.tab("Top storingen"))
+    
+    def prediction_frame(self, tab):
+        self.prediction_frame = ctk.CTkFrame(tab)
+        self.prediction_frame.pack(side="top", fill="both", expand=True)
+        self.prediction_frame.propagate(False)
         
+        # temp label
+        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: ", font=("Arial", 18))
+        self.RMSE_label.pack(side="top", fill="both")
+        
+        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="95% van de gevallen zit de functie herstel duur tussen:", font=("Arial", 18))
+        self.interval_label.pack(side="top", fill="both")
+        
+        
+    
     def top_geo_code_frame(self, tab):
         self.geo_code_frame = ctk.CTkFrame(tab)
         self.geo_code_frame.pack(side="top", fill="both", expand=True)
@@ -277,6 +293,11 @@ class VisualizationFrame(ctk.CTkFrame):
         # make canvas dar mode
         self.prediction_canvas.draw()
         self.prediction_canvas.get_tk_widget().pack()
+        
+        prediction_results = get_95_interval(self.model, input, X, Y)
+        
+        self.RMSE_label.configure(text=f"Voorspellings RMSE: {prediction_results['rmse']:.2f}")
+        self.interval_label.configure(text=f"95% van de gevallen zit de functie herstel duur tussen:\n{prediction_results['interval'][0]} minuten en {prediction_results['interval'][1]} minuten")
     
     def open_top_level(self, options) -> None:
         """Opent een top level window met informatie over de feature.

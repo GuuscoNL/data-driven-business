@@ -190,7 +190,16 @@ class App(ctk.CTk):
         print("Data cleaned")
         
     def predict_callback(self, X):
+        # Zet de cursor op watch (laad cursor)
+        self.config(cursor="watch")
+        self.update()
+        
         self.visualization_frame.update_prediction(X)
+        
+        # Zet de cursor op normaal
+        self.config(cursor="")
+        self.update()
+        
 
     def on_closing(self):
         # Dit is gedaan, omdat er anders invalid command gedoe krijgt...
