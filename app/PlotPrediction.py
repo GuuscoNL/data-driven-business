@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import sklearn
 import pandas as pd
 import matplotlib
+from sklearn.metrics import mean_squared_error
 
 def plot_prediction(model, 
                     input_data: pd.DataFrame, 
@@ -40,4 +41,21 @@ def plot_prediction(model,
         f'Waardes boven voorspelling: {percentage_above_mean:.2f}%'
         ]
     ax.legend(labels=labels)
+
+
+def get_95_interval(model, input_data, X, y):
+    pred_leaf_id = model.apply(input_data)[0]
     
+    leaf_indices = model.apply(X)
+    durations = np.array(y[leaf_indices == pred_leaf_id].tolist())
+
+    percentile_95 = np.percentile(durations, 95)
+    
+    # Calculate RMSE for the selected leaf
+    leaf_durations = y[leaf_indices == pred_leaf_id].tolist()
+    rmse = np.sqrt(mean_squared_error(leaf_durations, np.full(len(leaf_durations), np.mean(leaf_durations))))
+    
+    return {
+        'interval': (5, percentile_95),
+        'rmse': rmse
+    }
