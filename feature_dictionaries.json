@@ -88,6 +88,14 @@
         "135": "Overig processen",
         "136": "In- en uitzetten materieel",
         "Other": "Ander oorzaak code"
+    },
+    "prioriteit": {
+        "1": "Urgent, Grote infra schade, zeer grote impact.",
+        "2": "Urgent, Direct herstel.",
+        "5": "Urgent met afspraak, binnen 36 uur.",
+        "4": "Niet urgent met afspraak, Geen direct herstel, langer dan 36 uur.",
+        "8": "Preventief, Geen functionaliteit verlies",
+        "9": "Administratief"
     }
 }
 
