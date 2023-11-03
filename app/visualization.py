@@ -21,6 +21,7 @@ class VisualizationFrame(ctk.CTkFrame):
         self.model_df_raw = model_df_raw
         self.data = data
         self.prediction_canvas = None
+        self.causes_to_ignore =["215", "221", "218", "135", "151", "298"]
 
         
         self.total_data = len(self.data)
@@ -95,7 +96,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
         # add button
         self.geo_code_button = ctk.CTkButton(self.geo_code_frame, text="Bereken", command=self.on_geo_code_button_click)
-        self.geo_code_button.pack(side="top")
+        self.geo_code_button.pack(side="top", pady=(10,0))
         
     def on_geo_code_button_click(self):
         geo_code = self.geo_code_entry.get()
@@ -138,8 +139,17 @@ class VisualizationFrame(ctk.CTkFrame):
         self.geo_code_total_label.configure(text=f"Totaal aantal storingen: {geo_code_total}")
         
         # bereken de meest voorkomende oorzaak voor de geocode
-        geo_code_most_cause = data_geo_code["stm_oorz_code"].value_counts().idxmax()
-        self.geo_code_most_cause_label.configure(text=f"Meest voorkomende oorzaken: {geo_code_most_cause.replace('.0', '')}")
+        geo_code_most_cause = data_geo_code["stm_oorz_code"].value_counts()
+        
+        geo_code_most_cause_str = "Geen informatie beschikbaar"
+        # check if the cuase is not in the causes to ignore
+        for cause in geo_code_most_cause.index:
+            cause = str(cause).replace(".0", "")
+            if cause not in self.causes_to_ignore:
+                geo_code_most_cause_str = feature_dictionary.get("oorz_code", {}).get(str(cause), "Geen informatie beschikbaar")
+                break
+        
+        self.geo_code_most_cause_label.configure(text=f"Meest voorkomende oorzaak:\n{str(geo_code_most_cause_str)}")
         
     def top_malfunction_frame(self, tab):
         self.top_malfunction_frame = ctk.CTkFrame(tab)
@@ -173,14 +183,14 @@ class VisualizationFrame(ctk.CTkFrame):
         most_common_causes = self.data['stm_oorz_code'].value_counts().index.tolist()
         most_common_causes = [str(cause) for cause in most_common_causes]
         
-        causes_to_ignore =["215", "221", "218", "135", "151", "298"]
+        
         top_causes = []
         # ignore some causes
         for cause in most_common_causes:
             cause = cause.replace(".0", "")
             if len(top_causes) >= 5:
                 break
-            if cause not in causes_to_ignore:
+            if cause not in self.causes_to_ignore:
                 top_causes.append(cause)
 
         top_causes_str = ""
