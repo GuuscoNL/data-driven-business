@@ -33,7 +33,8 @@ class ToplevelInfoWindow(ctk.CTkToplevel):
                     feature_dict_str += f"{option}: {feature_dict[option]}\n"
 
         height = len(feature_dict_str.split("\n"))
-        self.geometry(f"450x{height*21+130}")
+        width = max([len(line) for line in feature_dict_str.split("\n")])
+        self.geometry(f"{width*10+50}x{height*21+130}")
         # size label to fit text
         
         self.label = ctk.CTkLabel(self, text=feature_dict_str, font=("Arial", 18), justify="left")
