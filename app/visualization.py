@@ -217,6 +217,8 @@ class VisualizationFrame(ctk.CTkFrame):
         # make a plot that shows the amount of malfunctions per year
         self.data["year"] = self.data["stm_fh_ddt"].dt.year
         malfunction_per_year = self.data.groupby("year")["stm_fh_duur"].count()
+        # only till year 2018
+        malfunction_per_year = malfunction_per_year[:13]
         plt.style.use('grayscale')
         
         fig = plt.figure(figsize=(10, 5), dpi=100)
