@@ -8,7 +8,7 @@ import json
 
 from PlotPrediction import plot_prediction, get_95_interval
 
-feature_dictionary = json.load(open("./feature_dictionaries.json", "r"))
+feature_dictionary = json.load(open("data/feature_dictionaries.json", "r"))
 
 class VisualizationFrame(ctk.CTkFrame):
     def __init__(self, model, model_df_raw, data, *args, **kwargs):
