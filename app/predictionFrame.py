@@ -64,22 +64,20 @@ class PredictionFrame(ctk.CTkFrame):
             list[dict[str, Any]]: de features met naam, type en de opties daarvoor.
         """
         
-        # remove the target column
+        # verwidjer de target kolom
         model_df_copy = self.model_df_raw.copy().drop(["anm_tot_fh"], axis=1)
         
         features = []
         
-        while len(model_df_copy.columns) > 0:
-
-            first_colm = model_df_copy.columns[0]
+        for column in model_df_copy.columns:
 
             # Krijg het begin van de naam van de kolom
-            column_name_split = first_colm.split("_")
+            column_name_split = column.split("_")
             column_start = "_".join(column_name_split[:-1])
             
             # Eindigt de kolom naam op "enc" dan is het een encoded feature
             if column_name_split[-1] == "enc":
-                columns = [first_colm]
+                columns = [column]
                 
                 if (enc := feature_encodings.get(column_start, None)) is not None:
                     
@@ -89,21 +87,22 @@ class PredictionFrame(ctk.CTkFrame):
                 else:
                     assert False, f"Unknown encoded feature: `{column_start}`"
                 
-            # Begint de kolom naam met "stm" dan is het een continu feature
+            # Begint de kolom naam met "stm" dan is het niet een encoded feature
             elif column_name_split[0] == "stm":
-                columns = [first_colm]
+                columns = [column]
                 feature_name = "_".join(column_name_split[1:])
-                if first_colm == "stm_prioriteit":
+                if column == "stm_prioriteit":
                     features.append({"name": feature_name, 
-                                    "type": "int", 
-                                    "options": [1,2,4,5,8,9]})
+                                    "type": "option", 
+                                    "options": ["1", "2", "4", "5", "8", "9"]})
                 else:
                     features.append({"name": feature_name, 
                                 "type": "int", 
                                 "options": []})
                 
+            # Geen idee wat het is dus geef een error
             else:
-                assert False, f"Unknown column name: `{first_colm}`"
+                assert False, f"Unknown column name: `{column}`"
             
             # Verwijder de kolommen die al zijn toegevoegd en ga door naar de volgende kolom
             model_df_copy = model_df_copy.drop(columns, axis=1)
@@ -166,32 +165,32 @@ class PredictionFrame(ctk.CTkFrame):
             feature_type = feature["type"]
             feature_name = feature["name"]
             feature_options = feature["options"]
+
             if feature_type == "option":
-                # Zet alle opties op False
-                for x in feature_options:
-                    X[f"{feature_name}_{x}"] = False
-                
-                # Zet de optie die is gekozen op True
-                value = self.features_input_fields[feature_name].get()
-                X[f"{feature_name}_{value}"] = True
+                if feature_name == "prioriteit":
+
+                    X[f'stm_{feature_name}'] = int(self.features_input_fields[feature_name].get())
+                else:
+                    # Zet alle opties op False
+                    for x in feature_options:
+                        X[f"{feature_name}_{x}"] = False
+                    
+                    # Zet de optie die is gekozen op True
+                    value = self.features_input_fields[feature_name].get()
+                    X[f"{feature_name}_{value}"] = True
+
             elif feature_type == "enc":
                 value = self.features_input_fields[feature_name].get()
                 X[f"{feature_name}_enc"] = feature_encodings[feature_name][value]
+
             elif feature_type == "int":
                 value = self.features_input_fields[feature_name].get()
-                
-                # check input
+
                 
                 # check if input is a number
                 if not value.isnumeric():
-                    self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen getal en moet positief zijn")
+                    self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen getal of is niet positief zijn")
                     return
-                
-                # hardcode helaas
-                if feature_name == "prioriteit":
-                    if int(value) not in feature_options:
-                        self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen geldige prioriteit")
-                        return
                 
                 X[f'stm_{feature_name}'] = int(value) if value != "" else 0
                 
