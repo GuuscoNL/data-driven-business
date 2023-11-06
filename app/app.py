@@ -3,7 +3,6 @@ from predictionFrame import PredictionFrame
 from visualization import VisualizationFrame
 import pickle
 import pandas as pd
-import threading
 
 WINDOW_HEIGHT = 800
 WINDOW_WIDTH = 1400
@@ -119,15 +118,8 @@ class App(ctk.CTk):
         import time
         start_time = time.time()
         
-        #load data in thread
-        model_thread = threading.Thread(target=self.load_model)
-        model_thread.start()
-        
-        data_thread = threading.Thread(target=self.load_data)
-        data_thread.start()
-        
-        model_thread.join()
-        data_thread.join()
+        self.load_data()
+
         
         print(f"Total time to load data and model: {(time.time() - start_time):.4f}")
         
@@ -149,32 +141,23 @@ class App(ctk.CTk):
     def load_model(self) -> None:
         """Laad het model en de kolommen die zijn gebruikt tijdens het fitten van het model.
         """
-        print("loading model...")
-        # laad het model in a thread
         
-        def on_model_thread():
-            print("   model loading...")
-            with open("./models/DecisionTreeRegressor.pkl", "rb") as file:
-                self.model = pickle.load(file)
-            print("   model loading done!")
-        
-        # Laad het model dat is gebruikt tijdens het fitten van het model
-        def on_model_df_thread():
-            print("   model_df loading...")
-            self.model_df_raw = pd.read_csv("data/model_df.csv", index_col=0, engine="pyarrow")
-            print("   model_df loading done!")
-            
-        model_thread = threading.Thread(target=on_model_thread)
-        model_df_thread = threading.Thread(target=on_model_df_thread)
-        model_thread.start()
-        model_df_thread.start()
-        
-        model_thread.join()
-        model_df_thread.join()
-        
-        print("model loaded")
         
     def load_data(self) -> None:
+        
+        print("loading model and model_df...")
+        # laad het model in a thread
+
+        with open("./models/DecisionTreeRegressor.pkl", "rb") as file:
+            self.model = pickle.load(file)
+
+        self.model_df_raw = pd.read_pickle('data/model_df.pkl')
+
+        print("model and model_df loaded")
+        
+        # ------------------------------------
+        # ------------------------------------
+        
         print("loading data...")
         self.data = pd.read_csv("./data/sap_storing_data_hu_project.csv", index_col=0, engine="pyarrow", usecols=cols_to_use)
         
