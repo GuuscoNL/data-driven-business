@@ -11,7 +11,7 @@ from PlotPrediction import plot_prediction, get_95_interval
 feature_dictionary = json.load(open("data/feature_dictionaries.json", "r"))
 
 class VisualizationFrame(ctk.CTkFrame):
-    def __init__(self, model, model_df_raw, data, *args, **kwargs):
+    def __init__(self, model, model_df_raw, data_tuple, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # add label to tell that the data is loading
@@ -19,18 +19,15 @@ class VisualizationFrame(ctk.CTkFrame):
         self.info_window_is_open = False
         self.model = model
         self.model_df_raw = model_df_raw
-        self.data = data
+
+        self.total_data = data_tuple[0]
+        self.all_geo_codes = data_tuple[1]
+        self.data = data_tuple[2]
+
         self.prediction_canvas = None
         self.causes_to_ignore =["215", "221", "218", "135", "151", "298"]
 
         
-        self.total_data = len(self.data)
-        self.all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
-        
-        self.data.dropna(subset=["stm_geo_mld", "stm_fh_ddt"], inplace=True)
-        
-        # make sure the date columns are datetime
-        self.data['stm_fh_ddt'] = pd.to_datetime(self.data['stm_fh_ddt'], format='%d/%m/%Y %H:%M:%S', errors='coerce')
         
         # Grid
         self.grid_columnconfigure(0, weight = 1)
