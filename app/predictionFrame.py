@@ -1,5 +1,4 @@
 import customtkinter as ctk
-import pickle
 import pandas as pd
 from typing import Any
 from functools import partial
@@ -164,20 +163,13 @@ class PredictionFrame(ctk.CTkFrame):
         for feature in self.features:
             feature_type = feature["type"]
             feature_name = feature["name"]
-            feature_options = feature["options"]
 
             if feature_type == "option":
                 if feature_name == "prioriteit":
 
                     X[f'stm_{feature_name}'] = int(self.features_input_fields[feature_name].get())
                 else:
-                    # Zet alle opties op False
-                    for x in feature_options:
-                        X[f"{feature_name}_{x}"] = False
-                    
-                    # Zet de optie die is gekozen op True
-                    value = self.features_input_fields[feature_name].get()
-                    X[f"{feature_name}_{value}"] = True
+                    assert False, f"Unknown feature name with type `option`: `{feature_name}`"
 
             elif feature_type == "enc":
                 value = self.features_input_fields[feature_name].get()
@@ -185,14 +177,13 @@ class PredictionFrame(ctk.CTkFrame):
 
             elif feature_type == "int":
                 value = self.features_input_fields[feature_name].get()
-
                 
                 # check if input is a number
                 if not value.isnumeric():
-                    self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen getal of is niet positief zijn")
+                    self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen geheel getal of is niet positief zijn")
                     return
                 
-                X[f'stm_{feature_name}'] = int(value) if value != "" else 0
+                X[f'stm_{feature_name}'] = int(value)
                 
             else:
                 assert False, f"Unknown feature type: `{feature['type']}`"
