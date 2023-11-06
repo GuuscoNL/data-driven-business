@@ -1,14 +1,12 @@
 import customtkinter as ctk
-import tkinter as tk
-import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from infoWindow import ToplevelInfoWindow
 from functools import partial
-import pickle
+import pandas as pd
 import json
 
-from PlotPrediction import plot_prediction
+from PlotPrediction import plot_prediction, get_95_interval
 
 feature_dictionary = json.load(open("./feature_dictionaries.json", "r"))
 
@@ -23,10 +21,16 @@ class VisualizationFrame(ctk.CTkFrame):
         self.model_df_raw = model_df_raw
         self.data = data
         self.prediction_canvas = None
+        self.causes_to_ignore =["215", "221", "218", "135", "151", "298"]
 
         
         self.total_data = len(self.data)
+        self.all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
         
+        self.data.dropna(subset=["stm_geo_mld", "stm_fh_ddt"], inplace=True)
+        
+        # make sure the date columns are datetime
+        self.data['stm_fh_ddt'] = pd.to_datetime(self.data['stm_fh_ddt'], format='%d/%m/%Y %H:%M:%S', errors='coerce')
         
         # Grid
         self.grid_columnconfigure(0, weight = 1)
@@ -42,12 +46,28 @@ class VisualizationFrame(ctk.CTkFrame):
         self.top_tab_view.grid(row = 0, column = 0, sticky = "nesw")
         self.top_tab_view.propagate(False)
         
-        self.top_tab_view.add("geo_code")
-        self.top_tab_view.add("top storingen")
+        self.top_tab_view.add("Voorspelling")
+        self.top_tab_view.add("Geo code")
+        self.top_tab_view.add("Top storingen")
         
-        self.top_geo_code_frame(self.top_tab_view.tab("geo_code"))
-        self.top_malfunction_frame(self.top_tab_view.tab("top storingen"))
+        self.prediction_frame(self.top_tab_view.tab("Voorspelling"))
+        self.top_geo_code_frame(self.top_tab_view.tab("Geo code"))
+        self.top_malfunction_frame(self.top_tab_view.tab("Top storingen"))
+    
+    def prediction_frame(self, tab):
+        self.prediction_frame = ctk.CTkFrame(tab)
+        self.prediction_frame.pack(side="top", fill="both", expand=True)
+        self.prediction_frame.propagate(False)
         
+        # temp label
+        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: ...", font=("Arial", 18))
+        self.RMSE_label.pack(side="top", fill="both")
+        
+        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="In 95% van de gevallen zit de functie herstel duur tussen:\n...", font=("Arial", 18))
+        self.interval_label.pack(side="top", fill="both")
+        
+        
+    
     def top_geo_code_frame(self, tab):
         self.geo_code_frame = ctk.CTkFrame(tab)
         self.geo_code_frame.pack(side="top", fill="both", expand=True)
@@ -62,8 +82,8 @@ class VisualizationFrame(ctk.CTkFrame):
         self.geo_code_entry = ctk.CTkEntry(self.geo_code_sub_frame, placeholder_text="559")
         self.geo_code_entry.pack(side="left", fill="both")
         
-        self.geo_code_mean_label = ctk.CTkLabel(self.geo_code_frame, text="Gemiddelde storingsduur: ", font=("Arial", 18))
-        self.geo_code_mean_label.pack(side="top", fill="both")
+        self.geo_code_median_label = ctk.CTkLabel(self.geo_code_frame, text="Mediaan storingsduur: ", font=("Arial", 18))
+        self.geo_code_median_label.pack(side="top", fill="both")
         
         self.geo_code_mean_month_label = ctk.CTkLabel(self.geo_code_frame, text="Gemiddelde aantal storingen per maand: ", font=("Arial", 18))
         self.geo_code_mean_month_label.pack(side="top", fill="both")
@@ -76,14 +96,14 @@ class VisualizationFrame(ctk.CTkFrame):
         
         # add button
         self.geo_code_button = ctk.CTkButton(self.geo_code_frame, text="Bereken", command=self.on_geo_code_button_click)
-        self.geo_code_button.pack(side="top")
+        self.geo_code_button.pack(side="top", pady=(10,0))
         
     def on_geo_code_button_click(self):
         geo_code = self.geo_code_entry.get()
-        all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
+        self.all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
         
         # Check of de geocode valid is
-        if not geo_code in all_geo_codes:
+        if  geo_code not in self.all_geo_codes:
             # zorg dat de geocode entry rood wordt
             if geo_code == "":
                 self.geo_code_entry.configure(text_color="white")
@@ -91,7 +111,7 @@ class VisualizationFrame(ctk.CTkFrame):
                 self.geo_code_entry.configure(text_color="red")
             
             # leeg de labels
-            self.geo_code_mean_label.configure(text="Gemiddelde storingsduur: ")
+            self.geo_code_median_label.configure(text="Mediaan storingsduur: ")
             self.geo_code_mean_month_label.configure(text="Gemiddelde aantal storingen per maand: ")
             self.geo_code_total_label.configure(text="Totaal aantal storingen: ")
             return
@@ -101,9 +121,9 @@ class VisualizationFrame(ctk.CTkFrame):
         data_geo_code = self.data[self.data["stm_geo_mld"] == geo_code]
         
         #bereken de gemiddelde storingsduur voor de geocode
-        geo_code_mean = data_geo_code["stm_fh_duur"].mean()
-        geo_code_mean = round(geo_code_mean, 2)
-        self.geo_code_mean_label.configure(text=f"Gemiddelde storingsduur: {geo_code_mean}")
+        geo_code_median = data_geo_code["stm_fh_duur"].median()
+        geo_code_median = round(geo_code_median, 2)
+        self.geo_code_median_label.configure(text=f"Mediaan storingsduur: {geo_code_median}")
         
         #bereken de gemiddelde aantal storingen per maand voor de geocode
         # verdeel de data in jaren
@@ -119,15 +139,24 @@ class VisualizationFrame(ctk.CTkFrame):
         self.geo_code_total_label.configure(text=f"Totaal aantal storingen: {geo_code_total}")
         
         # bereken de meest voorkomende oorzaak voor de geocode
-        geo_code_most_cause = data_geo_code["stm_oorz_code"].value_counts().idxmax()
-        self.geo_code_most_cause_label.configure(text=f"Meest voorkomende oorzaak: {geo_code_most_cause}")
+        geo_code_most_cause = data_geo_code["stm_oorz_code"].value_counts()
+        
+        geo_code_most_cause_str = "Geen informatie beschikbaar"
+        # check if the cuase is not in the causes to ignore
+        for cause in geo_code_most_cause.index:
+            cause = str(cause).replace(".0", "")
+            if cause not in self.causes_to_ignore:
+                geo_code_most_cause_str = feature_dictionary.get("oorz_code", {}).get(str(cause), "Geen informatie beschikbaar")
+                break
+        
+        self.geo_code_most_cause_label.configure(text=f"Meest voorkomende oorzaak:\n{str(geo_code_most_cause_str)}")
         
     def top_malfunction_frame(self, tab):
         self.top_malfunction_frame = ctk.CTkFrame(tab)
         self.top_malfunction_frame.pack(side="top", fill="both", expand=True)
         self.top_malfunction_frame.propagate(False)
 
-        self.total_mean_label = ctk.CTkLabel(self.top_malfunction_frame, text="Gemiddelde storingsduur: ", font=("Arial", 18))
+        self.total_mean_label = ctk.CTkLabel(self.top_malfunction_frame, text="Mediaan storingsduur: ", font=("Arial", 18))
         self.total_mean_label.pack(side="top", fill="both")
         
         self.total_mean_month_label = ctk.CTkLabel(self.top_malfunction_frame, text="Gemiddelde aantal storingen per maand: ", font=("Arial", 18))
@@ -139,7 +168,11 @@ class VisualizationFrame(ctk.CTkFrame):
         self.total_most_cause_label = ctk.CTkLabel(self.top_malfunction_frame, text="Meest voorkomende oorzaak: ", font=("Arial", 18))
         self.total_most_cause_label.pack(side="top", fill="both")
         
-        self.total_mean_label.configure(text=f"Gemiddelde storingsduur: {round(self.data['stm_fh_duur'].mean())} minuten")
+        total_mean = self.data["stm_fh_duur"].median()
+        # format H hour M minutes
+        total_mean_str = f"{int(total_mean//60)} uur en {int(total_mean%60)} minuten"
+        
+        self.total_mean_label.configure(text=f"Mediaan storingsduur: {total_mean_str}")
         
         self.data["year"] = self.data["stm_fh_ddt"].dt.year
         
@@ -150,14 +183,14 @@ class VisualizationFrame(ctk.CTkFrame):
         most_common_causes = self.data['stm_oorz_code'].value_counts().index.tolist()
         most_common_causes = [str(cause) for cause in most_common_causes]
         
-        causes_to_ignore =["215", "221", "218", "135", "151", "298"]
+        
         top_causes = []
         # ignore some causes
         for cause in most_common_causes:
             cause = cause.replace(".0", "")
             if len(top_causes) >= 5:
                 break
-            if cause not in causes_to_ignore:
+            if cause not in self.causes_to_ignore:
                 top_causes.append(cause)
 
         top_causes_str = ""
@@ -165,7 +198,7 @@ class VisualizationFrame(ctk.CTkFrame):
             info = feature_dictionary.get("oorz_code", {}).get(cause, "Geen informatie beschikbaar")
             top_causes_str += (f"{i+1}. {info}\n")
         
-        self.total_most_cause_label.configure(text=f"Top 3 meest voorkomende oorzaak:\n{top_causes_str}")
+        self.total_most_cause_label.configure(text=f"Top 5 meest voorkomende oorzaak:\n{top_causes_str}")
 
     def bottom_frame(self):
         self.visualization_tab_view = ctk.CTkTabview(self)
@@ -184,6 +217,8 @@ class VisualizationFrame(ctk.CTkFrame):
         # make a plot that shows the amount of malfunctions per year
         self.data["year"] = self.data["stm_fh_ddt"].dt.year
         malfunction_per_year = self.data.groupby("year")["stm_fh_duur"].count()
+        # only till year 2018
+        malfunction_per_year = malfunction_per_year[:13]
         plt.style.use('grayscale')
         
         fig = plt.figure(figsize=(10, 5), dpi=100)
@@ -206,12 +241,12 @@ class VisualizationFrame(ctk.CTkFrame):
         self.visualization_frame2.propagate(False)
         
         # where it is lower than 500 minuten
-        duur = self.data[self.data["stm_fh_duur"] < 500]["stm_fh_duur"]
+        duur = self.data[(self.data["stm_fh_duur"] > 5) & (self.data["stm_fh_duur"] < 480)]["stm_fh_duur"]
         
         # plot histogram of malfunction duration
-        fig2 = plt.figure(figsize=(10, 4), dpi=100)
+        fig2 = plt.figure(figsize=(10, 5), dpi=100)
         plot2 = fig2.add_subplot(111)
-        plot2.set_title("Histogram van storingsduur")
+        plot2.set_title("Histogram van storingsduur (5 tot 480 minuten)")
         plot2.set_xlabel("Storingsduur (minuten)")
         plot2.set_ylabel("Aantal storingen")
         plot2.hist(duur, bins=100, color="b")
@@ -238,7 +273,7 @@ class VisualizationFrame(ctk.CTkFrame):
         most_common_causes_keys = [key.replace(".0", "") for key in most_common_causes_keys]
         
         
-        fig3 = plt.figure(figsize=(9, 4), dpi=100)
+        fig3 = plt.figure(figsize=(10, 5), dpi=100)
         plot3 = fig3.add_subplot(111)
         plot3.set_title("Vaak voorkomende oorzaken")
         plot3.set_xlabel("Oorzaak")
@@ -257,7 +292,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
         # voeg info knop toe
         self.info_button = ctk.CTkButton(self.visualization_frame3, width=30, text="Oorzaak code dictionary", command=partial(self.open_top_level, most_common_causes_keys))
-        self.info_button.pack(side="top")
+        self.info_button.pack(side="top", pady=(10,0))
         
         self.visualization_frame4 = ctk.CTkFrame(self.visualization_tab_view.tab("Voorspelling"))
         self.visualization_frame4.pack(side="top", fill="both", expand=True)
@@ -277,6 +312,14 @@ class VisualizationFrame(ctk.CTkFrame):
         # make canvas dar mode
         self.prediction_canvas.draw()
         self.prediction_canvas.get_tk_widget().pack()
+        
+        prediction_results = get_95_interval(self.model, input, X, Y)
+        
+        self.RMSE_label.configure(text=f"RMSE Voorspelling: {prediction_results['rmse']:.2f}")
+        self.interval_label.configure(text=f"In 95% van de gevallen zit de functie herstel duur tussen:\n{prediction_results['interval'][0]:.2f} minuten en {prediction_results['interval'][1]:.2f} minuten")
+        
+        self.top_tab_view.set("Voorspelling")
+        self.visualization_tab_view.set("Voorspelling")
     
     def open_top_level(self, options) -> None:
         """Opent een top level window met informatie over de feature.

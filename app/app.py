@@ -134,8 +134,8 @@ class App(ctk.CTk):
         self.prediction_frame = PredictionFrame(self.model, self.model_df_raw, self.predict_callback, self)
         self.prediction_frame.grid(row = 0, column = 0, sticky = "wnse")
         
-        self.update()
-        self.loading_label_model.destroy()
+        # self.update()
+        self.loading_label_data.destroy()
         
         self.visualization_frame = VisualizationFrame(self.model, self.model_df_raw, self.data, self)
         self.visualization_frame.grid(row = 0, column = 1, sticky = "wnse")
@@ -153,14 +153,14 @@ class App(ctk.CTk):
         # laad het model in a thread
         
         def on_model_thread():
-            print("   model loading!")
+            print("   model loading...")
             with open("./models/DecisionTreeRegressor.pkl", "rb") as file:
                 self.model = pickle.load(file)
             print("   model loading done!")
         
         # Laad het model dat is gebruikt tijdens het fitten van het model
         def on_model_df_thread():
-            print("   model_df loading!")
+            print("   model_df loading...")
             self.model_df_raw = pd.read_csv("data/model_df.csv", index_col=0, engine="pyarrow")
             print("   model_df loading done!")
             
@@ -179,18 +179,14 @@ class App(ctk.CTk):
         self.data = pd.read_csv("./data/sap_storing_data_hu_project.csv", index_col=0, engine="pyarrow", usecols=cols_to_use)
         
         # Remove .0 from geocode column
-
+        print("data loaded, cleaning data...")
         self.data["stm_geo_mld"] = self.data["stm_geo_mld"].astype(str).replace(".0", "", regex=True)
         
-        self.data.dropna(subset=["stm_geo_mld", "stm_fh_ddt"], inplace=True)
-        
-        # make sure the date columns are datetime
-        self.data['stm_fh_ddt'] = pd.to_datetime(self.data['stm_fh_ddt'], format='%d/%m/%Y %H:%M:%S', errors='coerce')
-        
-        print("data loaded")
+        print("Data cleaned")
         
     def predict_callback(self, X):
         self.visualization_frame.update_prediction(X)
+        
 
     def on_closing(self):
         # Dit is gedaan, omdat er anders invalid command gedoe krijgt...

@@ -168,18 +168,13 @@ class PredictionFrame(ctk.CTkFrame):
                 
                 # check if input is a number
                 if not value.isnumeric():
-                    self.result_duration_label.configure(text=f"Duur van storing:\n{value} is geen getal")
-                    return
-                
-                # check if input is a positive number
-                if int(value) < 0:
-                    self.result_duration_label.configure(text=f"Duur van storing:\n{value} is geen positief getal")
+                    self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen getal en moet positief zijn")
                     return
                 
                 # hardcode helaas
                 if feature_name == "prioriteit":
                     if int(value) not in feature_options:
-                        self.result_duration_label.configure(text=f"Duur van storing:\n{value} is geen geldige prioriteit")
+                        self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen geldige prioriteit")
                         return
                 
                 X[f'stm_{feature_name}'] = int(value) if value != "" else 0
