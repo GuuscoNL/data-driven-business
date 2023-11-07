@@ -85,9 +85,14 @@ class PredictionFrame(ctk.CTkFrame):
                     if enc_keys[0].isnumeric():
                         enc_keys = sorted(enc_keys, key=lambda x: int(x))
                     
-                    features.append({"name": column_start, 
-                                    "type": "enc", 
+                    if column_start == "techn_veld":
+                        features.append({"name": column_start, 
+                                    "type": "enc_option", 
                                     "options": enc_keys})
+                    else:
+                        features.append({"name": column_start, 
+                                        "type": "enc", 
+                                        "options": enc_keys})
                 else:
                     assert False, f"Unknown encoded feature: `{column_start}`"
                 
@@ -128,15 +133,18 @@ class PredictionFrame(ctk.CTkFrame):
         label = ctk.CTkLabel(frame, text=f"{feature_name}:", font=("Arial", 18))
         label.pack(side="left", fill="x", padx=(10, 0))
         
+        do_entry = feature_type == "str" or feature_type == "int" or feature_type == "enc"
+        do_option = feature_type == "option" or feature_type == "enc_option"
+        
         # Maak een input veld voor de feature gebaseerd op het type
         info_button = None
-        if feature_type == "str" or feature_type == "int":
+        if do_entry:
             input_field = ctk.CTkEntry(frame, width=200)
 
             if feature_dictionary.get(feature_name, None) is not None:
                 info_button = ctk.CTkButton(frame, text="i", width=30 ,command=partial(self.open_top_level, feature_name, feature["options"]), font=("Arial", 18, "bold"))
 
-        elif feature_type == "option" or feature_type == "enc":
+        elif do_option:
             input_field = ctk.CTkOptionMenu(frame, values=feature["options"])
             
             if feature_dictionary.get(feature_name, None) is not None:
@@ -177,6 +185,14 @@ class PredictionFrame(ctk.CTkFrame):
                     assert False, f"Unknown feature name with type `option`: `{feature_name}`"
 
             elif feature_type == "enc":
+                value = self.features_input_fields[feature_name].get()
+                if feature_encodings[feature_name].get(value, None) is None:
+                    if value == "": value = " "
+                    self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen geldige optie voor {feature_name}")
+                    return
+                X[f"{feature_name}_enc"] = feature_encodings[feature_name][value]
+            
+            elif feature_type == "enc_option":
                 value = self.features_input_fields[feature_name].get()
                 X[f"{feature_name}_enc"] = feature_encodings[feature_name][value]
 
