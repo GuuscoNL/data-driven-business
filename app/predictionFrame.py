@@ -79,10 +79,14 @@ class PredictionFrame(ctk.CTkFrame):
                 columns = [column]
                 
                 if (enc := feature_encodings.get(column_start, None)) is not None:
+                    enc_keys = list(enc.keys())
+
+                    if enc_keys[0].isnumeric():
+                        enc_keys = sorted(enc_keys, key=lambda x: int(x))
                     
                     features.append({"name": column_start, 
                                     "type": "enc", 
-                                    "options": list(enc.keys())})
+                                    "options": enc_keys})
                 else:
                     assert False, f"Unknown encoded feature: `{column_start}`"
                 
