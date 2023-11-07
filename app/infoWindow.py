@@ -22,8 +22,11 @@ class ToplevelInfoWindow(ctk.CTkToplevel):
         feature_dict = feature_dictionary.get(feature, None)
         feature_dict_str = ""
         
-        # remove .0 from numbers
-        options = [str(option).replace(".0", "") for option in options]
+        # sorteer de opties op nummer als het nummers zijn
+        if options[0].isnumeric():
+            options = sorted(options, key=lambda x: int(x))
+            # remove .0 from numbers
+            options = [str(option).replace(".0", "") for option in options]
         
         if feature_dict is None:
             feature_dict_str = "Geen informatie beschikbaar"
