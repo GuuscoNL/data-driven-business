@@ -1,10 +1,13 @@
 import customtkinter as ctk
-import pickle
 import pandas as pd
 from typing import Any
 from functools import partial
 from infoWindow import ToplevelInfoWindow, open_top_levels, feature_dictionary
 import datetime
+import json
+
+feature_encodings = json.load(open("data/feature_encodings.json", "r"))
+
 
 class PredictionFrame(ctk.CTkFrame):
     def __init__(self, model, model_df_raw, predict_callback, *args, **kwargs):
@@ -60,37 +63,55 @@ class PredictionFrame(ctk.CTkFrame):
             list[dict[str, Any]]: de features met naam, type en de opties daarvoor.
         """
         
-        # remove the target column
+        # verwidjer de target kolom
         model_df_copy = self.model_df_raw.copy().drop(["anm_tot_fh"], axis=1)
         
         features = []
+        #TODO: geo_code met entry ipv optionmenu
         
-        while len(model_df_copy.columns) > 0:
-
-            first_colm = model_df_copy.columns[0]
+        for column in model_df_copy.columns:
 
             # Krijg het begin van de naam van de kolom
-            column_name_split = first_colm.split("_")
+            column_name_split = column.split("_")
             column_start = "_".join(column_name_split[:-1])
             
-            # Als de kolom een legnte heeft van 1, dan is het een kolom zonder dummies
-            if column_name_split[0] == "stm":
-                columns = [first_colm]
-                if first_colm == "stm_prioriteit":
-                    features.append({"name": column_name_split[1], 
-                                    "type": "int", 
-                                    "options": [1,2,4,5,8,9]})
-                else:
-                    features.append({"name": column_name_split[1], 
-                                "type": "int", 
-                                "options": ""})
+            # Eindigt de kolom naam op "enc" dan is het een encoded feature
+            if column_name_split[-1] == "enc":
+                columns = [column]
                 
+                if (enc := feature_encodings.get(column_start, None)) is not None:
+                    enc_keys = list(enc.keys())
+
+                    if enc_keys[0].isnumeric():
+                        enc_keys = sorted(enc_keys, key=lambda x: int(x))
+                    
+                    if column_start == "techn_veld":
+                        features.append({"name": column_start, 
+                                    "type": "enc_option", 
+                                    "options": enc_keys})
+                    else:
+                        features.append({"name": column_start, 
+                                        "type": "enc", 
+                                        "options": enc_keys})
+                else:
+                    assert False, f"Unknown encoded feature: `{column_start}`"
+                
+            # Begint de kolom naam met "stm" dan is het niet een encoded feature
+            elif column_name_split[0] == "stm":
+                columns = [column]
+                feature_name = "_".join(column_name_split[1:])
+                if column == "stm_prioriteit":
+                    features.append({"name": feature_name, 
+                                    "type": "option", 
+                                    "options": ["1", "2", "4", "5", "8", "9"]})
+                else:
+                    features.append({"name": feature_name, 
+                                "type": "int", 
+                                "options": []})
+                
+            # Geen idee wat het is dus geef een error
             else:
-                # Krijg alle kolommen die beginnen met de naam van dat kolom
-                columns = [x for x in model_df_copy.columns if x.startswith(column_start)]
-                features.append({"name": column_start, 
-                                "type": "option", 
-                                "options": [x.split("_")[-1] for x in columns]})
+                assert False, f"Unknown column name: `{column}`"
             
             # Verwijder de kolommen die al zijn toegevoegd en ga door naar de volgende kolom
             model_df_copy = model_df_copy.drop(columns, axis=1)
@@ -112,15 +133,18 @@ class PredictionFrame(ctk.CTkFrame):
         label = ctk.CTkLabel(frame, text=f"{feature_name}:", font=("Arial", 18))
         label.pack(side="left", fill="x", padx=(10, 0))
         
+        do_entry = feature_type == "str" or feature_type == "int" or feature_type == "enc"
+        do_option = feature_type == "option" or feature_type == "enc_option"
+        
         # Maak een input veld voor de feature gebaseerd op het type
         info_button = None
-        if feature_type == "str" or feature_type == "int":
+        if do_entry:
             input_field = ctk.CTkEntry(frame, width=200)
 
             if feature_dictionary.get(feature_name, None) is not None:
                 info_button = ctk.CTkButton(frame, text="i", width=30 ,command=partial(self.open_top_level, feature_name, feature["options"]), font=("Arial", 18, "bold"))
 
-        elif feature_type == "option":
+        elif do_option:
             input_field = ctk.CTkOptionMenu(frame, values=feature["options"])
             
             if feature_dictionary.get(feature_name, None) is not None:
@@ -152,32 +176,35 @@ class PredictionFrame(ctk.CTkFrame):
         for feature in self.features:
             feature_type = feature["type"]
             feature_name = feature["name"]
-            feature_options = feature["options"]
+
             if feature_type == "option":
-                # Zet alle opties op False
-                for x in feature_options:
-                    X[f"{feature_name}_{x}"] = False
-                
-                # Zet de optie die is gekozen op True
+                if feature_name == "prioriteit":
+
+                    X[f'stm_{feature_name}'] = int(self.features_input_fields[feature_name].get())
+                else:
+                    assert False, f"Unknown feature name with type `option`: `{feature_name}`"
+
+            elif feature_type == "enc":
                 value = self.features_input_fields[feature_name].get()
-                X[f"{feature_name}_{value}"] = True
+                if feature_encodings[feature_name].get(value, None) is None:
+                    if value == "": value = " "
+                    self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen geldige optie voor {feature_name}")
+                    return
+                X[f"{feature_name}_enc"] = feature_encodings[feature_name][value]
+            
+            elif feature_type == "enc_option":
+                value = self.features_input_fields[feature_name].get()
+                X[f"{feature_name}_enc"] = feature_encodings[feature_name][value]
+
             elif feature_type == "int":
                 value = self.features_input_fields[feature_name].get()
                 
-                # check input
-                
                 # check if input is a number
                 if not value.isnumeric():
-                    self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen getal en moet positief zijn")
+                    self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen geheel getal of is niet positief zijn")
                     return
                 
-                # hardcode helaas
-                if feature_name == "prioriteit":
-                    if int(value) not in feature_options:
-                        self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen geldige prioriteit")
-                        return
-                
-                X[f'stm_{feature_name}'] = int(value) if value != "" else 0
+                X[f'stm_{feature_name}'] = int(value)
                 
             else:
                 assert False, f"Unknown feature type: `{feature['type']}`"

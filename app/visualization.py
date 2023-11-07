@@ -8,10 +8,10 @@ import json
 
 from PlotPrediction import plot_prediction, get_95_interval
 
-feature_dictionary = json.load(open("./feature_dictionaries.json", "r"))
+feature_dictionary = json.load(open("data/feature_dictionaries.json", "r"))
 
 class VisualizationFrame(ctk.CTkFrame):
-    def __init__(self, model, model_df_raw, data, *args, **kwargs):
+    def __init__(self, model, model_df_raw, data_tuple, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # add label to tell that the data is loading
@@ -19,18 +19,15 @@ class VisualizationFrame(ctk.CTkFrame):
         self.info_window_is_open = False
         self.model = model
         self.model_df_raw = model_df_raw
-        self.data = data
+
+        self.total_data = data_tuple[0]
+        self.all_geo_codes = data_tuple[1]
+        self.data = data_tuple[2]
+
         self.prediction_canvas = None
         self.causes_to_ignore =["215", "221", "218", "135", "151", "298"]
 
         
-        self.total_data = len(self.data)
-        self.all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
-        
-        self.data.dropna(subset=["stm_geo_mld", "stm_fh_ddt"], inplace=True)
-        
-        # make sure the date columns are datetime
-        self.data['stm_fh_ddt'] = pd.to_datetime(self.data['stm_fh_ddt'], format='%d/%m/%Y %H:%M:%S', errors='coerce')
         
         # Grid
         self.grid_columnconfigure(0, weight = 1)
@@ -60,10 +57,10 @@ class VisualizationFrame(ctk.CTkFrame):
         self.prediction_frame.propagate(False)
         
         # temp label
-        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: ...", font=("Arial", 18))
+        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: ...", font=("Arial", 24))
         self.RMSE_label.pack(side="top", fill="both")
         
-        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="In 95% van de gevallen zit de functie herstel duur tussen:\n...", font=("Arial", 18))
+        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="In 95% van de gevallen zit de functie herstel duur tussen:\n...", font=("Arial", 24))
         self.interval_label.pack(side="top", fill="both")
         
         
@@ -122,8 +119,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
         #bereken de gemiddelde storingsduur voor de geocode
         geo_code_median = data_geo_code["stm_fh_duur"].median()
-        geo_code_median = round(geo_code_median, 2)
-        self.geo_code_median_label.configure(text=f"Mediaan storingsduur: {geo_code_median}")
+        self.geo_code_median_label.configure(text=f"Mediaan storingsduur: {int(geo_code_median//60)} uur en {int(geo_code_median%60)} minuten")
         
         #bereken de gemiddelde aantal storingen per maand voor de geocode
         # verdeel de data in jaren
@@ -165,7 +161,7 @@ class VisualizationFrame(ctk.CTkFrame):
         self.total_total_label = ctk.CTkLabel(self.top_malfunction_frame, text="Totaal aantal storingen: ", font=("Arial", 18))
         self.total_total_label.pack(side="top", fill="both")
         
-        self.total_most_cause_label = ctk.CTkLabel(self.top_malfunction_frame, text="Meest voorkomende oorzaak: ", font=("Arial", 18))
+        self.total_most_cause_label = ctk.CTkLabel(self.top_malfunction_frame, text="Meest voorkomende oorzaak: ", font=("Arial", 18), justify="left")
         self.total_most_cause_label.pack(side="top", fill="both")
         
         total_mean = self.data["stm_fh_duur"].median()
@@ -198,7 +194,7 @@ class VisualizationFrame(ctk.CTkFrame):
             info = feature_dictionary.get("oorz_code", {}).get(cause, "Geen informatie beschikbaar")
             top_causes_str += (f"{i+1}. {info}\n")
         
-        self.total_most_cause_label.configure(text=f"Top 5 meest voorkomende oorzaak:\n{top_causes_str}")
+        self.total_most_cause_label.configure(text=f"Top 5 meest voorkomende oorzaken:\n{top_causes_str}")
 
     def bottom_frame(self):
         self.visualization_tab_view = ctk.CTkTabview(self)

@@ -162,3 +162,4 @@ cython_debug/
 data/*
 models/*
 !.gitkeep
+!feature_dictionaries.json
