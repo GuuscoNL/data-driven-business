@@ -13,7 +13,7 @@ feature_dictionary = json.load(open("data/feature_dictionaries.json", "r"))
 # TODO:
 # [X] Tekst groter voorspelling
 # [ ] Voeg info knop toe
-# [ ] format duur
+# [X] format duur
 
 class VisualizationFrame(ctk.CTkFrame):
     def __init__(self, model, model_df_raw, data_tuple, *args, **kwargs):
@@ -166,7 +166,7 @@ class VisualizationFrame(ctk.CTkFrame):
         self.total_total_label = ctk.CTkLabel(self.top_malfunction_frame, text="Totaal aantal storingen: ", font=("Arial", 18))
         self.total_total_label.pack(side="top", fill="both")
         
-        self.total_most_cause_label = ctk.CTkLabel(self.top_malfunction_frame, text="Meest voorkomende oorzaak: ", font=("Arial", 18))
+        self.total_most_cause_label = ctk.CTkLabel(self.top_malfunction_frame, text="Meest voorkomende oorzaak: ", font=("Arial", 18), justify="left")
         self.total_most_cause_label.pack(side="top", fill="both")
         
         total_mean = self.data["stm_fh_duur"].median()
@@ -199,7 +199,7 @@ class VisualizationFrame(ctk.CTkFrame):
             info = feature_dictionary.get("oorz_code", {}).get(cause, "Geen informatie beschikbaar")
             top_causes_str += (f"{i+1}. {info}\n")
         
-        self.total_most_cause_label.configure(text=f"Top 5 meest voorkomende oorzaken:\n{top_causes_str}", justify="left")
+        self.total_most_cause_label.configure(text=f"Top 5 meest voorkomende oorzaken:\n{top_causes_str}")
 
     def bottom_frame(self):
         self.visualization_tab_view = ctk.CTkTabview(self)
