@@ -10,6 +10,11 @@ from PlotPrediction import plot_prediction, get_95_interval
 
 feature_dictionary = json.load(open("data/feature_dictionaries.json", "r"))
 
+# TODO:
+# [X] Tekst groter voorspelling
+# [ ] Voeg info knop toe
+# [ ] format duur
+
 class VisualizationFrame(ctk.CTkFrame):
     def __init__(self, model, model_df_raw, data_tuple, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -57,10 +62,10 @@ class VisualizationFrame(ctk.CTkFrame):
         self.prediction_frame.propagate(False)
         
         # temp label
-        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: ...", font=("Arial", 18))
+        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: ...", font=("Arial", 24))
         self.RMSE_label.pack(side="top", fill="both")
         
-        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="In 95% van de gevallen zit de functie herstel duur tussen:\n...", font=("Arial", 18))
+        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="In 95% van de gevallen zit de functie herstel duur tussen:\n...", font=("Arial", 24))
         self.interval_label.pack(side="top", fill="both")
         
         
@@ -195,7 +200,7 @@ class VisualizationFrame(ctk.CTkFrame):
             info = feature_dictionary.get("oorz_code", {}).get(cause, "Geen informatie beschikbaar")
             top_causes_str += (f"{i+1}. {info}\n")
         
-        self.total_most_cause_label.configure(text=f"Top 5 meest voorkomende oorzaak:\n{top_causes_str}")
+        self.total_most_cause_label.configure(text=f"Top 5 meest voorkomende oorzaken:\n{top_causes_str}", justify="left")
 
     def bottom_frame(self):
         self.visualization_tab_view = ctk.CTkTabview(self)
