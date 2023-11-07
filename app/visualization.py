@@ -10,11 +10,6 @@ from PlotPrediction import plot_prediction, get_95_interval
 
 feature_dictionary = json.load(open("data/feature_dictionaries.json", "r"))
 
-# TODO:
-# [X] Tekst groter voorspelling
-# [ ] Voeg info knop toe
-# [X] format duur
-
 class VisualizationFrame(ctk.CTkFrame):
     def __init__(self, model, model_df_raw, data_tuple, *args, **kwargs):
         super().__init__(*args, **kwargs)

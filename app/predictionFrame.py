@@ -67,6 +67,7 @@ class PredictionFrame(ctk.CTkFrame):
         model_df_copy = self.model_df_raw.copy().drop(["anm_tot_fh"], axis=1)
         
         features = []
+        #TODO: geo_code met entry ipv optionmenu
         
         for column in model_df_copy.columns:
 
