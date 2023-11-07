@@ -124,8 +124,7 @@ class VisualizationFrame(ctk.CTkFrame):
         
         #bereken de gemiddelde storingsduur voor de geocode
         geo_code_median = data_geo_code["stm_fh_duur"].median()
-        geo_code_median = round(geo_code_median, 2)
-        self.geo_code_median_label.configure(text=f"Mediaan storingsduur: {geo_code_median}")
+        self.geo_code_median_label.configure(text=f"Mediaan storingsduur: {int(geo_code_median//60)} uur en {int(geo_code_median%60)} minuten")
         
         #bereken de gemiddelde aantal storingen per maand voor de geocode
         # verdeel de data in jaren
