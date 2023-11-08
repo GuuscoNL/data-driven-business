@@ -56,12 +56,13 @@ class VisualizationFrame(ctk.CTkFrame):
         self.prediction_frame.pack(side="top", fill="both", expand=True)
         self.prediction_frame.propagate(False)
         
-        # temp label
-        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: ...", font=("Arial", 24))
-        self.RMSE_label.pack(side="top", fill="both")
-        
-        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="In 95% van de gevallen zit de functie herstel duur tussen:\n...", font=("Arial", 24))
+        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="In 95% van de gevallen zit de functie herstel duur tussen:\n...", font=("Arial", 24), justify="left")
         self.interval_label.pack(side="top", fill="both")
+        
+
+        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: ...", font=("Arial", 24))
+        self.RMSE_label.pack(side="top", fill="both", pady=(20,0))
+        
         
         
     
