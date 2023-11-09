@@ -20,11 +20,11 @@ Zet de data in de ['data'](data) folder en noe het `sap_storing_data_hu_project.
 - [`app`](app)<br>
     In deze folder staat de code voor de app (dashboard). Deze kan worden gestart door `app.py` te runnen.
 
-- [`main.ipynb`](main.ipynb)<br>
+- [`TargetPrep.ipynb`](TargetPrep.ipynb)<br>
     In de notebook wordt de target variabele gemaakt en deze zal worden geroepen door de andere notebooks.
 
 - [`DataPrep.ipynb`](DataPrep.ipynb)<br>
-    In deze notebook wordt de data voorbereid voor het model. Hier worden de features gemaakt en de data wordt gesplitst in een train en test set. Deze notebook roept de target variabele aan uit de main notebook. De data wordt opgeslagen in de [data](data) folder:
+    In deze notebook wordt de data voorbereid voor het model. Hier worden de features gemaakt en de data wordt gesplitst in een train en test set. Deze notebook roept de target variabele aan uit de TargetPrep notebook. De data wordt opgeslagen in de [data](data) folder:
     - `model_df.pkl`
     - `test_df.pkl`
     - `train_df.pkl`
