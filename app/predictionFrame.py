@@ -34,7 +34,7 @@ class PredictionFrame(ctk.CTkFrame):
         self.bottom_frame.grid(row = 1, column = 0, sticky = "nesw")
         self.bottom_frame.propagate(False)
 
-        # top_frame
+        # Voeg alle features toe
         self.features = self.get_features()
         
         for feature in self.features:
@@ -55,34 +55,30 @@ class PredictionFrame(ctk.CTkFrame):
         self.predict_button.pack(side="bottom", pady=(0, 20))
         
     def get_features(self):
-        """Haalt alle kolommen uit `data/model_df.csv` en maakt daar een lijst van 
+        """Haalt alle kolommen uit `data/model_df.pkl` en maakt daar een lijst van 
         met dicts van de naam en het type van de feature moet de mogelijke opties. 
         Dit wordt gebruikt bij het maken van de input velden.
-
-        Returns:
-            list[dict[str, Any]]: de features met naam, type en de opties daarvoor.
         """
         
-        # verwidjer de target kolom
-        model_df_copy = self.model_df_raw.copy().drop(["anm_tot_fh"], axis=1)
+        # Hardcoded features, omdat dit makkelijker is dan het uit de data 
+        # halen en overzichtelijker is.
+        
+        model_df_copy = self.model_df_raw.copy()
         
         features = []
         
         features.append({"name": "prioriteit", 
                                     "type": "option", 
                                     "options": ["1", "2", "4", "5", "8", "9"]})
-        
-        enc_keys = list(feature_encodings.get("oorz_code", None).keys())
+
         features.append({"name":    "oorz_code", 
                                     "type": "enc", 
                                     "options": []})
-        
-        enc_keys = list(feature_encodings.get("geo_code", None).keys())
+
         features.append({"name":    "geo_code", 
                                     "type": "enc", 
                                     "options": []})
-        
-        enc_keys = list(feature_encodings.get("contractgb", None).keys())
+
         features.append({"name":    "contractgb",
                                     "type": "enc",
                                     "options": []})
@@ -92,12 +88,12 @@ class PredictionFrame(ctk.CTkFrame):
                                     "type": "enc_option",
                                     "options": enc_keys})
         
-        
+        # dummies
         columns = [x for x in model_df_copy.columns if x.startswith("oorzgr")]
         features.append({"name": "oorzgr", 
                         "type": "option", 
                         "options": [x.split("_")[-1] for x in columns]})
-            
+
         return features
 
     def add_feature_input(self, master: ctk.CTkFrame, feature) -> None:
@@ -127,18 +123,13 @@ class PredictionFrame(ctk.CTkFrame):
                 info_button = ctk.CTkButton(frame, text="i", width=30 ,command=partial(self.open_top_level, feature_name, feature["options"]), font=("Arial", 18, "bold"))
 
         elif do_option:
-            
-            if feature_type == "option" and feature["options"] == []:
-                frame.destroy()
-                label.destroy()
-                return
-            
             input_field = ctk.CTkOptionMenu(frame, values=feature["options"])
             
             if feature_dictionary.get(feature_name, None) is not None:
                 info_button = ctk.CTkButton(frame, text="i", width=30 ,command=partial(self.open_top_level, feature_name, feature["options"]), font=("Arial", 18, "bold"))
 
         else:
+            # Als het type niet bekend is geef dan een error
             assert False, f"Unknown feature type: `{feature_type}`"
 
         if info_button is not None: info_button.pack(side="right", padx=(5, 5))
@@ -166,7 +157,7 @@ class PredictionFrame(ctk.CTkFrame):
             feature_name = feature["name"]
             feature_options = feature["options"]
             
-            # tech_veld heeft encoded en dummies
+            # tech_veld heeft encoded en dummies, dus die moet apart worden behandeld
             if feature_name == "techn_veld":
                 
                 # encoded
@@ -187,8 +178,8 @@ class PredictionFrame(ctk.CTkFrame):
                 
 
             elif feature_type == "option":
+                # prioriteit is een int, dus die moet apart worden behandeld
                 if feature_name == "prioriteit":
-
                     X[f'stm_{feature_name}'] = int(self.features_input_fields[feature_name].get())
                 else:
                     # Zet alle opties op False
@@ -198,13 +189,12 @@ class PredictionFrame(ctk.CTkFrame):
                     # Zet de optie die is gekozen op True
                     value = self.features_input_fields[feature_name].get()
                     X[f"{feature_name}_{value}"] = True
-                
-                
 
             elif feature_type == "enc":
                 value = self.features_input_fields[feature_name].get()
+                # check of de waarde een geldige optie is
                 if feature_encodings[feature_name].get(value, None) is None:
-                    if value == "": value = " "
+                    if value == "": value = " " # Als er niks is ingevuld, zet dan een spatie neer voor duidelijkheid
                     self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen geldige optie voor {feature_name}")
                     return
                 X[f"{feature_name}_enc"] = feature_encodings[feature_name][value]
@@ -216,7 +206,7 @@ class PredictionFrame(ctk.CTkFrame):
             elif feature_type == "int":
                 value = self.features_input_fields[feature_name].get()
                 
-                # check if input is a number
+                # check of de waarde een geldige optie is
                 if not value.isnumeric():
                     self.result_duration_label.configure(text=f"Duur van storing:\n'{value}' is geen geheel getal of is niet positief zijn")
                     return

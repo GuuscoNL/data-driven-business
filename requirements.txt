@@ -6,3 +6,4 @@ pyarrow
 customtkinter
 pickle
 tqdm
+linear-tree
