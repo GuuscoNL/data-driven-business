@@ -11,7 +11,7 @@ pip install -r requirements.txt
 ```
 
 # Startup
-Zet de data in de ['data'](data) folder en noe het `sap_storing_data_hu_project.csv`. Daarna run je de volgende notebooks/scripts in de volgende volgorde:
+Zet de data in de ['data'](data) folder en noem het `sap_storing_data_hu_project.csv`. Daarna run je de volgende notebooks/scripts in de volgende volgorde:
 - [`DataPrep.ipynb`](DataPrep.ipynb)
 - [`dTreeReg.ipynb`](dTreeReg.ipynb)
 - [`gui_model.ipynb`](gui_model.ipynb)
