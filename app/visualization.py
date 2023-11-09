@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from infoWindow import ToplevelInfoWindow
 from functools import partial
-import pandas as pd
 import json
 
 from PlotPrediction import plot_prediction, get_95_interval
@@ -124,7 +123,7 @@ class VisualizationFrame(ctk.CTkFrame):
         geo_code = self.geo_code_entry.get()
         
         # Check of de geocode valid is
-        if  geo_code not in self.all_geo_codes:
+        if  geo_code not in self.all_geo_codes or geo_code == "":
             # zorg dat de geocode entry rood wordt
             if geo_code == "":
                 self.geo_code_entry.configure(text_color="white")

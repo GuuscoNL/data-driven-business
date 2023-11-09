@@ -1,6 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import sklearn
 import pandas as pd
 import matplotlib
 from sklearn.metrics import mean_squared_error

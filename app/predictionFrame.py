@@ -1,6 +1,5 @@
 import customtkinter as ctk
 import pandas as pd
-from typing import Any
 from functools import partial
 from infoWindow import ToplevelInfoWindow, open_top_levels, feature_dictionary
 import datetime
@@ -73,15 +72,15 @@ class PredictionFrame(ctk.CTkFrame):
 
         features.append({"name":    "oorz_code", 
                                     "type": "enc", 
-                                    "options": []})
+                                    "options": list(feature_encodings.get("oorz_code", None).keys())})
 
         features.append({"name":    "geo_code", 
                                     "type": "enc", 
-                                    "options": []})
+                                    "options": list(feature_encodings.get("geo_code", None).keys())})
 
         features.append({"name":    "contractgb",
                                     "type": "enc",
-                                    "options": []})
+                                    "options": list(feature_encodings.get("contractgb", None).keys())})
         
         enc_keys = list(feature_encodings.get("techn_veld", None).keys())
         features.append({"name":    "techn_veld",
