@@ -17,6 +17,7 @@ class CustomSpinner:
 
     def stop(self):
         self.is_running = False
+        self.spinner_thread.join()
 
     def _spin(self, duration):
         start_time = time.time()
@@ -54,6 +55,5 @@ if __name__ == '__main__':
     with open("./data/df_gui.pkl", "wb") as file:
         pickle.dump(result, file)
     spinner.stop()
-    spinner.spinner_thread.join()
 
     print("Data processed and saved in `./data/df_gui.pkl`")
