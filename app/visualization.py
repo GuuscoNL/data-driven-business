@@ -14,20 +14,21 @@ class VisualizationFrame(ctk.CTkFrame):
     def __init__(self, model, model_df_raw, data_tuple, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # add label to tell that the data is loading
         self.propagate(False)
         self.info_window_is_open = False
         self.model = model
         self.model_df_raw = model_df_raw
 
+        # zet de data in variabelen
         self.total_data = data_tuple[0]
         self.all_geo_codes = data_tuple[1]
         self.data = data_tuple[2]
+        self.all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
 
         self.prediction_canvas = None
+        # Deze worden genegeerd bij het berekenen van de meest voorkomende oorzaken,
+        # omdat deze niet relevant zijn voor de gebruiker
         self.causes_to_ignore =["215", "221", "218", "135", "151", "298"]
-
-        
         
         # Grid
         self.grid_columnconfigure(0, weight = 1)
@@ -65,7 +66,6 @@ class VisualizationFrame(ctk.CTkFrame):
         self.RMSE_label = ctk.CTkLabel(self.RMSE_frame, text="Voorspellings RMSE: ...", font=("Arial", 24))
         self.RMSE_label.pack( side="left")
         
-        # add info button to the left of the label
         self.info_button = ctk.CTkButton(self.RMSE_frame, text="i", width=30 ,command=self.open_RMSE_info, font=("Arial", 18, "bold"))
         self.info_button.pack(side="left", fill="both", padx=(10,0))
         
@@ -80,18 +80,16 @@ class VisualizationFrame(ctk.CTkFrame):
             self.info_window_label = ctk.CTkLabel(self.info_window, text="Root Mean Square Error (RMSE) is een maat voor \nde nauwkeurigheid van een voorspelling.\nHoe lager de RMSE, hoe accurater de voorspelling.", font=("Arial", 18))
             self.info_window_label.pack(side="top", fill="both", padx=20, pady=20)
             
-            # add button to close window
             self.close_button = ctk.CTkButton(self.info_window, text="Sluiten", command=self.on_info_window_close)
             self.close_button.pack(pady=20, side="bottom")
             
-            # when the window is closed set the info_window_is_open to False
+            # wanneer de window wordt gesloten zet de info_window_is_open op False
             self.info_window.attributes("-topmost", True)
             self.info_window.protocol("WM_DELETE_WINDOW", self.on_info_window_close)
     
     def on_info_window_close(self):
         self.info_window_is_open = False
         self.info_window.destroy()
-        
     
     def top_geo_code_frame(self, tab):
         self.geo_code_frame = ctk.CTkFrame(tab)
@@ -119,13 +117,11 @@ class VisualizationFrame(ctk.CTkFrame):
         self.geo_code_most_cause_label = ctk.CTkLabel(self.geo_code_frame, text="Meest voorkomende oorzaak: ", font=("Arial", 18))
         self.geo_code_most_cause_label.pack(side="top", fill="both")
         
-        # add button
         self.geo_code_button = ctk.CTkButton(self.geo_code_frame, text="Bereken", command=self.on_geo_code_button_click)
         self.geo_code_button.pack(side="top", pady=(10,0))
         
     def on_geo_code_button_click(self):
         geo_code = self.geo_code_entry.get()
-        self.all_geo_codes = sorted(self.data["stm_geo_mld"].unique().tolist())
         
         # Check of de geocode valid is
         if  geo_code not in self.all_geo_codes:
@@ -145,11 +141,11 @@ class VisualizationFrame(ctk.CTkFrame):
         
         data_geo_code = self.data[self.data["stm_geo_mld"] == geo_code]
         
-        #bereken de gemiddelde storingsduur voor de geocode
+        # Bereken de gemiddelde storingsduur voor de geocode
         geo_code_median = data_geo_code["stm_fh_duur"].median()
         self.geo_code_median_label.configure(text=f"Mediaan storingsduur: {int(geo_code_median//60)} uur en {int(geo_code_median%60)} minuten")
         
-        #bereken de gemiddelde aantal storingen per maand voor de geocode
+        #Bereken de gemiddelde aantal storingen per maand voor de geocode
         # verdeel de data in jaren
         data_geo_code["year"] = data_geo_code["stm_fh_ddt"].dt.year
         
@@ -158,15 +154,15 @@ class VisualizationFrame(ctk.CTkFrame):
         geo_code_mean_per_month = round(data_geo_code.groupby('year')['stm_fh_duur'].count().mean()/12)
         self.geo_code_mean_month_label.configure(text=f"Gemiddelde aantal storingen per maand: {geo_code_mean_per_month}")
         
-        #bereken het totaal aantal storingen voor de geocode
+        # Bereken het totaal aantal storingen voor de geocode
         geo_code_total = data_geo_code["stm_fh_duur"].count()
         self.geo_code_total_label.configure(text=f"Totaal aantal storingen: {geo_code_total}")
         
-        # bereken de meest voorkomende oorzaak voor de geocode
+        # Bereken de meest voorkomende oorzaak voor de geocode
         geo_code_most_cause = data_geo_code["stm_oorz_code"].value_counts()
         
         geo_code_most_cause_str = "Geen informatie beschikbaar"
-        # check if the cuase is not in the causes to ignore
+        # check of de oorzaak niet in de ignore lijst staat
         for cause in geo_code_most_cause.index:
             cause = str(cause).replace(".0", "")
             if cause not in self.causes_to_ignore:
@@ -180,36 +176,31 @@ class VisualizationFrame(ctk.CTkFrame):
         self.top_malfunction_frame.pack(side="top", fill="both", expand=True)
         self.top_malfunction_frame.propagate(False)
 
-        self.total_mean_label = ctk.CTkLabel(self.top_malfunction_frame, text="Mediaan storingsduur: ", font=("Arial", 18))
+        # ----- mediaan van alle storingen -----
+        total_median = self.data["stm_fh_duur"].median()
+        # format H hour M minutes
+        total_median_str = f"{int(total_median//60)} uur en {int(total_median%60)} minuten"
+        
+        self.total_mean_label = ctk.CTkLabel(self.top_malfunction_frame, text=f"Mediaan storingsduur: {total_median_str}", font=("Arial", 18))
         self.total_mean_label.pack(side="top", fill="both")
         
-        self.total_mean_month_label = ctk.CTkLabel(self.top_malfunction_frame, text="Gemiddelde aantal storingen per maand: ", font=("Arial", 18))
+        # ----- gemiddelde aantal storingen per maand -----
+        self.data["year"] = self.data["stm_fh_ddt"].dt.year
+        total_mean_month = round(self.data.groupby('year')['stm_fh_duur'].count().mean()/12)
+        
+        self.total_mean_month_label = ctk.CTkLabel(self.top_malfunction_frame, text=f"Gemiddelde aantal storingen per maand: {total_mean_month}", font=("Arial", 18))
         self.total_mean_month_label.pack(side="top", fill="both")
         
-        self.total_total_label = ctk.CTkLabel(self.top_malfunction_frame, text="Totaal aantal storingen: ", font=("Arial", 18))
+        # ----- totaal aantal storingen -----
+        self.total_total_label = ctk.CTkLabel(self.top_malfunction_frame, text=f"Totaal aantal storingen: {self.total_data}", font=("Arial", 18))
         self.total_total_label.pack(side="top", fill="both")
         
-        self.total_most_cause_label = ctk.CTkLabel(self.top_malfunction_frame, text="Meest voorkomende oorzaak: ", font=("Arial", 18), justify="left")
-        self.total_most_cause_label.pack(side="top", fill="both")
-        
-        total_mean = self.data["stm_fh_duur"].median()
-        # format H hour M minutes
-        total_mean_str = f"{int(total_mean//60)} uur en {int(total_mean%60)} minuten"
-        
-        self.total_mean_label.configure(text=f"Mediaan storingsduur: {total_mean_str}")
-        
-        self.data["year"] = self.data["stm_fh_ddt"].dt.year
-        
-        self.total_mean_month_label.configure(text=f"Gemiddelde aantal storingen per maand: {round(self.data.groupby('year')['stm_fh_duur'].count().mean()/12)}")
-        
-        self.total_total_label.configure(text=f"Totaal aantal storingen: {self.total_data}")
-        
+        # ----- meest voorkomende oorzaken -----
         most_common_causes = self.data['stm_oorz_code'].value_counts().index.tolist()
         most_common_causes = [str(cause) for cause in most_common_causes]
         
-        
         top_causes = []
-        # ignore some causes
+        # Negeer de oorzaken die niet relevant zijn voor de gebruiker
         for cause in most_common_causes:
             cause = cause.replace(".0", "")
             if len(top_causes) >= 5:
@@ -222,7 +213,8 @@ class VisualizationFrame(ctk.CTkFrame):
             info = feature_dictionary.get("oorz_code", {}).get(cause, "Geen informatie beschikbaar")
             top_causes_str += (f"{i+1}. {info}\n")
         
-        self.total_most_cause_label.configure(text=f"Top 5 meest voorkomende oorzaken:\n{top_causes_str}")
+        self.total_most_cause_label = ctk.CTkLabel(self.top_malfunction_frame, text=f"Top 5 meest voorkomende oorzaken:\n{top_causes_str}", font=("Arial", 18), justify="left")
+        self.total_most_cause_label.pack(side="top", fill="both")
 
     def bottom_frame(self):
         self.visualization_tab_view = ctk.CTkTabview(self)
@@ -238,7 +230,7 @@ class VisualizationFrame(ctk.CTkFrame):
         self.visualization_frame.pack(side="top", fill="both", expand=True)
         self.visualization_frame.propagate(False)
         
-        # make a plot that shows the amount of malfunctions per year
+        # ----- plot de aantal storingen per jaar -----
         self.data["year"] = self.data["stm_fh_ddt"].dt.year
         malfunction_per_year = self.data.groupby("year")["stm_fh_duur"].count()
         # only till year 2018
@@ -260,6 +252,7 @@ class VisualizationFrame(ctk.CTkFrame):
         canvas.draw()
         canvas.get_tk_widget().pack()
         
+        # ----- plot een histogram van hoe vaak een functie duur voorkomt -----
         self.visualization_frame2 = ctk.CTkFrame(self.visualization_tab_view.tab("Histogram storingsduur"))
         self.visualization_frame2.pack(side="top", fill="both", expand=True)
         self.visualization_frame2.propagate(False)
@@ -267,7 +260,6 @@ class VisualizationFrame(ctk.CTkFrame):
         # where it is lower than 500 minuten
         duur = self.data[(self.data["stm_fh_duur"] > 5) & (self.data["stm_fh_duur"] < 480)]["stm_fh_duur"]
         
-        # plot histogram of malfunction duration
         fig2 = plt.figure(figsize=(10, 5), dpi=100)
         plot2 = fig2.add_subplot(111)
         plot2.set_title("Histogram van storingsduur (5 tot 480 minuten)")
@@ -283,7 +275,7 @@ class VisualizationFrame(ctk.CTkFrame):
         canvas1.get_tk_widget().pack()
         
         
-        # plot bar chart of most common causes
+        # ----- plot hoe vaak een oorzaak voorkomt -----
         self.visualization_frame3 = ctk.CTkFrame(self.visualization_tab_view.tab("Vaak voorkomende oorzaken"))
         self.visualization_frame3.pack(side="top", fill="both", expand=True)
         self.visualization_frame3.propagate(False)
@@ -329,11 +321,11 @@ class VisualizationFrame(ctk.CTkFrame):
         Y = self.model_df_raw["anm_tot_fh"]
         plot_prediction(self.model, input, ax, X, Y)
         
-        # show the plot in the frame
+        # show de plot in de frame
         if self.prediction_canvas is not None:
             self.prediction_canvas.get_tk_widget().destroy()
         self.prediction_canvas = FigureCanvasTkAgg(fig4, master=self.visualization_frame4)
-        # make canvas dar mode
+
         self.prediction_canvas.draw()
         self.prediction_canvas.get_tk_widget().pack()
         
@@ -349,8 +341,7 @@ class VisualizationFrame(ctk.CTkFrame):
         """Opent een top level window met informatie over de feature.
 
         Args:
-            feature_name (str): De naam van de feature waar informatie over wordt gegeven.
-            options (list[str]): De opties van de feature.
+            options (list[str]): De opties die worden laten zien.
         """
         if not self.info_window_is_open:
             self.info_window = ToplevelInfoWindow("oorz_code", options, self.infoWindow_callback)
