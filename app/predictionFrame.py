@@ -1,6 +1,5 @@
 import customtkinter as ctk
 import pandas as pd
-from typing import Any
 from functools import partial
 from infoWindow import ToplevelInfoWindow, open_top_levels, feature_dictionary
 import datetime

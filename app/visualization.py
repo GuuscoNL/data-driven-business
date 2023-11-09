@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from infoWindow import ToplevelInfoWindow
 from functools import partial
-import pandas as pd
 import json
 
 from PlotPrediction import plot_prediction, get_95_interval
