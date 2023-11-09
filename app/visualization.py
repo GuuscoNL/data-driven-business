@@ -56,13 +56,41 @@ class VisualizationFrame(ctk.CTkFrame):
         self.prediction_frame.pack(side="top", fill="both", expand=True)
         self.prediction_frame.propagate(False)
         
-        # temp label
-        self.RMSE_label = ctk.CTkLabel(self.prediction_frame, text="Voorspellings RMSE: ...", font=("Arial", 24))
-        self.RMSE_label.pack(side="top", fill="both")
-        
-        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="In 95% van de gevallen zit de functie herstel duur tussen:\n...", font=("Arial", 24))
+        self.interval_label = ctk.CTkLabel(self.prediction_frame, text="In 95% van de gevallen zit de functie herstel duur tussen:\n...", font=("Arial", 24), justify="left")
         self.interval_label.pack(side="top", fill="both")
         
+        self.RMSE_frame = ctk.CTkFrame(self.prediction_frame, fg_color="#2b2b2b")
+        self.RMSE_frame.pack(side="top", pady=10)
+
+        self.RMSE_label = ctk.CTkLabel(self.RMSE_frame, text="Voorspellings RMSE: ...", font=("Arial", 24))
+        self.RMSE_label.pack( side="left")
+        
+        # add info button to the left of the label
+        self.info_button = ctk.CTkButton(self.RMSE_frame, text="i", width=30 ,command=self.open_RMSE_info, font=("Arial", 18, "bold"))
+        self.info_button.pack(side="left", fill="both", padx=(10,0))
+        
+    def open_RMSE_info(self):
+        if not self.info_window_is_open:
+            self.info_window = ctk.CTkToplevel(self)
+            self.info_window.title("RMSE")
+            self.info_window.geometry("600x200")
+            self.info_window.propagate(False)
+            self.info_window_is_open = not self.info_window_is_open
+            
+            self.info_window_label = ctk.CTkLabel(self.info_window, text="Root Mean Square Error (RMSE) is een maat voor \nde nauwkeurigheid van een voorspelling.\nHoe lager de RMSE, hoe accurater de voorspelling.", font=("Arial", 18))
+            self.info_window_label.pack(side="top", fill="both", padx=20, pady=20)
+            
+            # add button to close window
+            self.close_button = ctk.CTkButton(self.info_window, text="Sluiten", command=self.on_info_window_close)
+            self.close_button.pack(pady=20, side="bottom")
+            
+            # when the window is closed set the info_window_is_open to False
+            self.info_window.attributes("-topmost", True)
+            self.info_window.protocol("WM_DELETE_WINDOW", self.on_info_window_close)
+    
+    def on_info_window_close(self):
+        self.info_window_is_open = False
+        self.info_window.destroy()
         
     
     def top_geo_code_frame(self, tab):
